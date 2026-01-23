@@ -72,7 +72,8 @@ class OrderBookSnapshot(Base):
         if best_bid is not None and best_ask is not None:
             spread = best_ask - best_bid
             mid_price = (best_ask + best_bid) / 2
-            spread_pct = (spread / mid_price) * 100 if mid_price > 0 else None
+            # spread_pct as fraction (0.0-1.0), not percentage
+            spread_pct = (spread / mid_price) if mid_price > 0 else None
 
         # Calculate depth at 1% and 5%
         def calculate_depth(levels: list, best_price: float, pct: float, is_bid: bool) -> float:
@@ -93,12 +94,14 @@ class OrderBookSnapshot(Base):
         bid_depth_5pct = calculate_depth(bids, best_bid, 0.05, True) if best_bid else None
         ask_depth_5pct = calculate_depth(asks, best_ask, 0.05, False) if best_ask else None
 
-        # Calculate imbalance
+        # Calculate imbalance (use `is not None` to handle 0.0 depths correctly)
         imbalance = None
-        if bid_depth_1pct and ask_depth_1pct:
+        if bid_depth_1pct is not None and ask_depth_1pct is not None:
             total_depth = bid_depth_1pct + ask_depth_1pct
             if total_depth > 0:
                 imbalance = (bid_depth_1pct - ask_depth_1pct) / total_depth
+            else:
+                imbalance = 0.0  # Both sides empty = balanced
 
         return cls(
             token_id=token_id,

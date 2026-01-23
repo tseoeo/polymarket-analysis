@@ -24,7 +24,6 @@ async def lifespan(app: FastAPI):
     """Application startup and shutdown events."""
     # Startup
     logger.info("Starting Polymarket Analyzer...")
-    logger.info(f"Database URL: {settings.database_url[:20]}...")
 
     try:
         await init_db()
@@ -33,24 +32,29 @@ async def lifespan(app: FastAPI):
         logger.error(f"Database initialization failed: {e}")
         raise
 
-    # Import and start scheduler after DB is ready
-    try:
-        from jobs.scheduler import start_scheduler, stop_scheduler
-        await start_scheduler()
-        logger.info("Scheduler started")
-    except Exception as e:
-        logger.warning(f"Scheduler not started: {e}")
+    # Import and start scheduler after DB is ready (if enabled)
+    # Use ENABLE_SCHEDULER=false to disable in multi-process deployments
+    if settings.enable_scheduler:
+        try:
+            from jobs.scheduler import start_scheduler
+            await start_scheduler()
+            logger.info("Scheduler started")
+        except Exception as e:
+            logger.warning(f"Scheduler not started: {e}")
+    else:
+        logger.info("Scheduler disabled via ENABLE_SCHEDULER=false")
 
     logger.info("Startup complete")
     yield
 
     # Shutdown
     logger.info("Shutting down...")
-    try:
-        from jobs.scheduler import stop_scheduler
-        await stop_scheduler()
-    except Exception:
-        pass
+    if settings.enable_scheduler:
+        try:
+            from jobs.scheduler import stop_scheduler
+            await stop_scheduler()
+        except Exception:
+            pass
     await close_db()
     logger.info("Shutdown complete")
 

@@ -15,7 +15,9 @@ class Settings(BaseSettings):
     clob_api_url: str = "https://clob.polymarket.com"
 
     # Scheduler settings
+    enable_scheduler: bool = True  # Set to False to disable background jobs (multi-process safety)
     scheduler_interval_minutes: int = 15
+    orderbook_concurrency: int = 10  # Max concurrent orderbook fetches
 
     # Data retention
     data_retention_days: int = 30

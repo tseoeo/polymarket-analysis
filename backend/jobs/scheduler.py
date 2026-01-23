@@ -1,8 +1,11 @@
 """APScheduler setup for background data collection and analysis."""
 
+import asyncio
 import logging
+from datetime import datetime, timedelta
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
+from apscheduler.triggers.date import DateTrigger
 
 from config import settings
 
@@ -15,33 +18,41 @@ scheduler: AsyncIOScheduler | None = None
 async def collect_markets_job():
     """Job: Fetch and update market data from Gamma API."""
     logger.info("Running market collection job...")
+    client = None
     try:
         from services.polymarket_client import PolymarketClient
         from database import async_session_maker
 
+        client = PolymarketClient()
         async with async_session_maker() as session:
-            client = PolymarketClient()
             await client.sync_markets(session)
             await session.commit()
         logger.info("Market collection complete")
     except Exception as e:
         logger.error(f"Market collection failed: {e}")
+    finally:
+        if client:
+            await client.close()
 
 
 async def collect_orderbooks_job():
     """Job: Fetch order book snapshots for all active markets."""
     logger.info("Running order book collection job...")
+    client = None
     try:
         from services.polymarket_client import PolymarketClient
         from database import async_session_maker
 
+        client = PolymarketClient()
         async with async_session_maker() as session:
-            client = PolymarketClient()
             await client.collect_orderbooks(session)
             await session.commit()
         logger.info("Order book collection complete")
     except Exception as e:
         logger.error(f"Order book collection failed: {e}")
+    finally:
+        if client:
+            await client.close()
 
 
 async def run_analysis_job():
@@ -136,8 +147,15 @@ async def start_scheduler():
     scheduler.start()
     logger.info(f"Scheduler started with {interval} minute interval")
 
-    # Run initial market sync
-    await collect_markets_job()
+    # Schedule initial market sync to run shortly after startup (non-blocking)
+    # This avoids blocking the healthcheck during startup
+    scheduler.add_job(
+        collect_markets_job,
+        DateTrigger(run_date=datetime.now() + timedelta(seconds=5)),
+        id="initial_market_sync",
+        name="Initial market sync",
+        replace_existing=True,
+    )
 
 
 async def stop_scheduler():
