@@ -147,16 +147,27 @@ async def run_analysis_job():
 
 
 async def cleanup_old_data_job():
-    """Job: Remove data older than retention period."""
+    """Job: Expire stale alerts and remove old data."""
     logger.info("Running data cleanup job...")
     try:
         from database import async_session_maker
-        from sqlalchemy import text
+        from sqlalchemy import text, update
         from datetime import datetime, timedelta
+        from models.alert import Alert
 
         cutoff = datetime.utcnow() - timedelta(days=settings.data_retention_days)
+        now = datetime.utcnow()
 
         async with async_session_maker() as session:
+            # Expire alerts past their expires_at timestamp
+            expire_result = await session.execute(
+                update(Alert)
+                .where(Alert.expires_at < now)
+                .where(Alert.is_active == True)
+                .values(is_active=False, dismissed_at=now)
+            )
+            expired_count = expire_result.rowcount
+
             # Delete old order book snapshots
             await session.execute(
                 text("DELETE FROM orderbook_snapshots WHERE timestamp < :cutoff"),
@@ -173,7 +184,11 @@ async def cleanup_old_data_job():
                 {"cutoff": cutoff},
             )
             await session.commit()
-        logger.info(f"Cleaned up data older than {cutoff}")
+
+        logger.info(
+            f"Cleanup complete: {expired_count} alerts expired, "
+            f"data older than {cutoff} removed"
+        )
     except Exception as e:
         logger.error(f"Cleanup failed: {e}")
 
