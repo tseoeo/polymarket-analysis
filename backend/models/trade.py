@@ -51,7 +51,11 @@ class Trade(Base):
         if isinstance(timestamp, str):
             timestamp = parse_date(timestamp)
         elif isinstance(timestamp, (int, float)):
-            timestamp = datetime.fromtimestamp(timestamp)
+            # Handle milliseconds (13+ digits) vs seconds (10 digits)
+            if timestamp > 1e12:
+                timestamp = datetime.fromtimestamp(timestamp / 1000)
+            else:
+                timestamp = datetime.fromtimestamp(timestamp)
 
         return cls(
             trade_id=data.get("id"),

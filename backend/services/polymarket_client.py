@@ -101,8 +101,10 @@ class PolymarketClient:
                 tokens = data.get("tokens", [])
                 for token in tokens:
                     token_id = token.get("token_id")
-                    # Skip invalid token_ids (must be alphanumeric, reasonable length)
-                    if token_id and len(token_id) > 5 and token_id.isalnum():
+                    # Skip invalid token_ids (must have reasonable length)
+                    # Length check filters garbage like "\\", "]", "5" while allowing
+                    # valid formats (numeric, hex, or alphanumeric with separators)
+                    if token_id and len(token_id) >= 10:
                         outcomes.append({
                             "name": token.get("outcome", "Unknown"),
                             "token_id": token_id,
@@ -113,8 +115,8 @@ class PolymarketClient:
                 if not outcomes:
                     clob_token_ids = data.get("clobTokenIds", [])
                     for i, token_id in enumerate(clob_token_ids):
-                        # Skip invalid token_ids
-                        if not token_id or len(token_id) < 5 or not token_id.isalnum():
+                        # Skip invalid token_ids (length check only)
+                        if not token_id or len(token_id) < 10:
                             continue
                         outcome_name = "Yes" if i == 0 else "No" if i == 1 else f"Outcome {i+1}"
                         outcomes.append({

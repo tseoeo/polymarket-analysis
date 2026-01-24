@@ -23,8 +23,15 @@ This application is designed to run on [Railway](https://railway.app).
 Railway will automatically set `DATABASE_URL` when you add PostgreSQL.
 
 Optional configuration:
+- `ENABLE_SCHEDULER` - Enable background jobs (default: false, see below)
 - `SCHEDULER_INTERVAL_MINUTES` - Data collection frequency (default: 15)
 - `LOG_LEVEL` - Logging level (default: INFO)
+
+### Scheduler Configuration
+
+Set `ENABLE_SCHEDULER=true` on exactly **ONE** service/worker to avoid duplicate jobs.
+
+If scaling to multiple replicas, create a separate "worker" service with the scheduler enabled and keep web replicas with it disabled.
 
 ## API Endpoints
 

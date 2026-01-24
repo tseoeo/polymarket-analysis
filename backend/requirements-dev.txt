@@ -1,0 +1,6 @@
+# Development and testing dependencies
+pytest>=8.0.0
+pytest-asyncio>=0.24.0
+pytest-cov>=4.1.0
+aiosqlite>=0.19.0    # SQLite async driver for test DB
+httpx>=0.26.0        # For TestClient (already in main requirements)

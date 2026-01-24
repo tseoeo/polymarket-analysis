@@ -7,12 +7,14 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 from apscheduler.triggers.date import DateTrigger
 
+from typing import Optional
+
 from config import settings
 
 logger = logging.getLogger(__name__)
 
 # Global scheduler instance
-scheduler: AsyncIOScheduler | None = None
+scheduler: Optional[AsyncIOScheduler] = None
 
 
 async def collect_markets_job():

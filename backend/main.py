@@ -4,16 +4,16 @@ import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 
 from config import settings
 from database import init_db, close_db
 
-# Configure logging
+# Configure logging (with fallback to INFO for invalid levels)
 logging.basicConfig(
-    level=getattr(logging, settings.log_level),
+    level=getattr(logging, settings.log_level.upper(), logging.INFO),
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 logger = logging.getLogger(__name__)
@@ -111,9 +111,9 @@ if assets_path.exists():
     @app.get("/{full_path:path}")
     async def serve_frontend(full_path: str):
         """Serve React frontend for all non-API routes."""
-        # Don't serve frontend for API routes
+        # Return 404 for unknown API routes
         if full_path.startswith("api/"):
-            return {"error": "Not found"}
+            raise HTTPException(status_code=404, detail="Not found")
         # Serve index.html for all frontend routes (React handles routing)
         if index_path.exists():
             return FileResponse(index_path)

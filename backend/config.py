@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     clob_api_url: str = "https://clob.polymarket.com"
 
     # Scheduler settings
-    enable_scheduler: bool = True  # Set to False to disable background jobs (multi-process safety)
+    enable_scheduler: bool = False  # Set ENABLE_SCHEDULER=true on ONE worker only
     scheduler_interval_minutes: int = 15
     orderbook_concurrency: int = 10  # Max concurrent orderbook fetches
 

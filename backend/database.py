@@ -34,6 +34,15 @@ class Base(DeclarativeBase):
     pass
 
 
+def import_models():
+    """Import all models to register them with Base.metadata.
+
+    This must be called before create_all() to ensure all tables are created.
+    Models use deferred imports to avoid circular dependencies.
+    """
+    from models import market, orderbook, trade, alert  # noqa: F401
+
+
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
     """Dependency for getting database sessions."""
     async with async_session_maker() as session:
@@ -45,6 +54,7 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
 
 async def init_db():
     """Initialize database tables."""
+    import_models()  # Ensure models are registered before creating tables
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
