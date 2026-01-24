@@ -78,14 +78,70 @@ async def collect_trades_job():
 
 
 async def run_analysis_job():
-    """Job: Run all analysis modules and generate alerts."""
+    """Job: Run all analysis modules and generate alerts.
+
+    Runs four analyzer modules:
+    1. VolumeAnalyzer - Detects unusual trading volume spikes
+    2. SpreadAnalyzer - Detects wide spreads indicating poor liquidity
+    3. MarketMakerAnalyzer - Detects MM liquidity withdrawals
+    4. ArbitrageDetector - Detects intra-market pricing anomalies
+
+    Each analyzer handles its own deduplication to avoid duplicate alerts.
+    """
     logger.info("Running analysis job...")
     try:
-        # Analysis modules will be added in Phase 3
-        # from services.arbitrage_detector import ArbitrageDetector
-        # from services.volume_analyzer import VolumeAnalyzer
-        # ...
-        logger.info("Analysis complete (no analyzers configured yet)")
+        from services.volume_analyzer import VolumeAnalyzer
+        from services.spread_analyzer import SpreadAnalyzer
+        from services.mm_analyzer import MarketMakerAnalyzer
+        from services.arbitrage_detector import ArbitrageDetector
+        from database import async_session_maker
+
+        async with async_session_maker() as session:
+            all_alerts = []
+
+            # Volume spike analysis
+            try:
+                volume_analyzer = VolumeAnalyzer()
+                volume_alerts = await volume_analyzer.analyze(session)
+                all_alerts.extend(volume_alerts)
+            except Exception as e:
+                logger.error(f"Volume analysis failed: {e}")
+
+            # Spread/liquidity analysis
+            try:
+                spread_analyzer = SpreadAnalyzer()
+                spread_alerts = await spread_analyzer.analyze(session)
+                all_alerts.extend(spread_alerts)
+            except Exception as e:
+                logger.error(f"Spread analysis failed: {e}")
+
+            # Market maker pullback analysis
+            try:
+                mm_analyzer = MarketMakerAnalyzer()
+                mm_alerts = await mm_analyzer.analyze(session)
+                all_alerts.extend(mm_alerts)
+            except Exception as e:
+                logger.error(f"MM analysis failed: {e}")
+
+            # Arbitrage detection
+            try:
+                arb_detector = ArbitrageDetector()
+                arb_alerts = await arb_detector.analyze(session)
+                all_alerts.extend(arb_alerts)
+            except Exception as e:
+                logger.error(f"Arbitrage analysis failed: {e}")
+
+            await session.commit()
+
+        # Log summary by alert type
+        alert_summary = {}
+        for alert in all_alerts:
+            alert_summary[alert.alert_type] = alert_summary.get(alert.alert_type, 0) + 1
+
+        logger.info(
+            f"Analysis complete: {len(all_alerts)} alerts generated "
+            f"{alert_summary if alert_summary else ''}"
+        )
     except Exception as e:
         logger.error(f"Analysis failed: {e}")
 
