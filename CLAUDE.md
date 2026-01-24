@@ -4,6 +4,7 @@
 
 - **Railway** is connected to GitHub - pushing to `main` triggers automatic deployment
 - No need to run `railway up` manually; just `git push` to deploy
+- **Production URL:** https://polymarket-analysis-production.up.railway.app
 
 ## Project Structure
 
@@ -25,6 +26,14 @@ cd backend && source venv/bin/activate && pytest -v
 ```
 
 ## Current Phase
+
+Phase 4 complete - API endpoints:
+- `GET /api/alerts` - List with filters
+- `GET /api/alerts/{id}` - Detail
+- `PATCH /api/alerts/{id}/dismiss` - Dismiss
+- `GET /api/markets` - List with alert counts
+- `GET /api/markets/{id}` - Detail
+- `GET /api/markets/{id}/alerts` - Market alerts
 
 Phase 3 complete - Analysis engine with:
 - VolumeAnalyzer (3x spike threshold)
