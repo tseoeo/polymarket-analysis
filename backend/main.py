@@ -100,10 +100,13 @@ async def api_info():
 # app.include_router(alerts.router, prefix="/api/alerts", tags=["Alerts"])
 
 
-# Serve React frontend (static files)
+# Serve React frontend (static files) - only if frontend is built
 static_path = Path(__file__).parent / "static"
-if static_path.exists():
-    app.mount("/assets", StaticFiles(directory=static_path / "assets"), name="assets")
+assets_path = static_path / "assets"
+index_path = static_path / "index.html"
+
+if assets_path.exists():
+    app.mount("/assets", StaticFiles(directory=assets_path), name="assets")
 
     @app.get("/{full_path:path}")
     async def serve_frontend(full_path: str):
@@ -112,7 +115,6 @@ if static_path.exists():
         if full_path.startswith("api/"):
             return {"error": "Not found"}
         # Serve index.html for all frontend routes (React handles routing)
-        index_path = static_path / "index.html"
         if index_path.exists():
             return FileResponse(index_path)
         return {"message": "Frontend not built yet"}
