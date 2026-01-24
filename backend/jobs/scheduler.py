@@ -57,6 +57,26 @@ async def collect_orderbooks_job():
             await client.close()
 
 
+async def collect_trades_job():
+    """Job: Fetch recent trades for all active markets."""
+    logger.info("Running trade collection job...")
+    client = None
+    try:
+        from services.polymarket_client import PolymarketClient
+        from database import async_session_maker
+
+        client = PolymarketClient()
+        async with async_session_maker() as session:
+            new_count, dup_count = await client.collect_trades(session)
+            await session.commit()
+        logger.info(f"Trade collection complete: {new_count} new, {dup_count} duplicates")
+    except Exception as e:
+        logger.error(f"Trade collection failed: {e}")
+    finally:
+        if client:
+            await client.close()
+
+
 async def run_analysis_job():
     """Job: Run all analysis modules and generate alerts."""
     logger.info("Running analysis job...")
@@ -125,6 +145,15 @@ async def start_scheduler():
         IntervalTrigger(minutes=interval),
         id="collect_orderbooks",
         name="Collect order book snapshots",
+        replace_existing=True,
+    )
+
+    # Trade collection - runs more frequently
+    scheduler.add_job(
+        collect_trades_job,
+        IntervalTrigger(minutes=settings.trade_collection_interval_minutes),
+        id="collect_trades",
+        name="Collect recent trades",
         replace_existing=True,
     )
 

@@ -61,9 +61,25 @@ class OrderBookSnapshot(Base):
         bids = data.get("bids", [])
         asks = data.get("asks", [])
 
-        # Calculate metrics
-        best_bid = float(bids[0]["price"]) if bids else None
-        best_ask = float(asks[0]["price"]) if asks else None
+        # Calculate best bid/ask with error handling for malformed data
+        best_bid = None
+        best_ask = None
+
+        if bids:
+            try:
+                price = float(bids[0].get("price", 0))
+                if price > 0:
+                    best_bid = price
+            except (TypeError, ValueError, KeyError):
+                pass
+
+        if asks:
+            try:
+                price = float(asks[0].get("price", 0))
+                if price > 0:
+                    best_ask = price
+            except (TypeError, ValueError, KeyError):
+                pass
 
         spread = None
         spread_pct = None
@@ -77,16 +93,36 @@ class OrderBookSnapshot(Base):
 
         # Calculate depth at 1% and 5%
         def calculate_depth(levels: list, best_price: float, pct: float, is_bid: bool) -> float:
-            if not levels or best_price is None:
+            """Calculate total size within percentage of best price.
+
+            Handles edge cases:
+            - Empty levels list
+            - Zero or negative best_price
+            - Missing or invalid price/size in levels
+            """
+            if not levels or best_price is None or best_price <= 0:
                 return 0.0
+
             total = 0.0
             threshold = best_price * (1 - pct) if is_bid else best_price * (1 + pct)
+
             for level in levels:
-                price = float(level["price"])
-                if is_bid and price >= threshold:
-                    total += float(level["size"])
-                elif not is_bid and price <= threshold:
-                    total += float(level["size"])
+                try:
+                    price = float(level.get("price", 0))
+                    size = float(level.get("size", 0))
+
+                    # Skip invalid prices or sizes
+                    if price <= 0 or size <= 0:
+                        continue
+
+                    if is_bid and price >= threshold:
+                        total += size
+                    elif not is_bid and price <= threshold:
+                        total += size
+                except (TypeError, ValueError):
+                    # Skip malformed levels
+                    continue
+
             return total
 
         bid_depth_1pct = calculate_depth(bids, best_bid, 0.01, True) if best_bid else None

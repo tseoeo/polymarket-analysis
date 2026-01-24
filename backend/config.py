@@ -17,7 +17,15 @@ class Settings(BaseSettings):
     # Scheduler settings
     enable_scheduler: bool = False  # Set ENABLE_SCHEDULER=true on ONE worker only
     scheduler_interval_minutes: int = 15
-    orderbook_concurrency: int = 10  # Max concurrent orderbook fetches
+    orderbook_concurrency: int = 10  # Max concurrent orderbook/trade fetches
+
+    # Trade collection settings
+    trade_collection_interval_minutes: int = 5  # More frequent than orderbooks
+    trade_lookback_minutes: int = 30  # How far back to look for trades
+
+    # API retry settings
+    api_max_retries: int = 3
+    api_retry_base_delay: float = 1.0  # Base delay in seconds
 
     # Data retention
     data_retention_days: int = 30

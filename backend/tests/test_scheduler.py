@@ -6,7 +6,7 @@ from unittest.mock import patch, MagicMock
 
 @pytest.mark.asyncio
 async def test_scheduler_registers_jobs():
-    """Scheduler should register all 4 jobs when started."""
+    """Scheduler should register all 6 jobs when started."""
     from jobs.scheduler import start_scheduler, stop_scheduler, scheduler
 
     with patch("jobs.scheduler.AsyncIOScheduler") as mock_scheduler_class:
@@ -15,18 +15,20 @@ async def test_scheduler_registers_jobs():
 
         await start_scheduler()
 
-        # Should have added 5 jobs total:
+        # Should have added 6 jobs total:
         # 1. collect_markets (interval)
         # 2. collect_orderbooks (interval)
-        # 3. run_analysis (interval)
-        # 4. cleanup_old_data (interval)
-        # 5. initial_market_sync (one-time)
-        assert mock_scheduler.add_job.call_count == 5
+        # 3. collect_trades (interval)
+        # 4. run_analysis (interval)
+        # 5. cleanup_old_data (interval)
+        # 6. initial_market_sync (one-time)
+        assert mock_scheduler.add_job.call_count == 6
 
         # Verify job IDs
         job_ids = [call.kwargs.get("id") for call in mock_scheduler.add_job.call_args_list]
         assert "collect_markets" in job_ids
         assert "collect_orderbooks" in job_ids
+        assert "collect_trades" in job_ids
         assert "run_analysis" in job_ids
         assert "cleanup_old_data" in job_ids
         assert "initial_market_sync" in job_ids
@@ -89,6 +91,7 @@ async def test_scheduler_job_functions_exist():
     from jobs.scheduler import (
         collect_markets_job,
         collect_orderbooks_job,
+        collect_trades_job,
         run_analysis_job,
         cleanup_old_data_job,
     )
@@ -98,6 +101,7 @@ async def test_scheduler_job_functions_exist():
 
     assert asyncio.iscoroutinefunction(collect_markets_job)
     assert asyncio.iscoroutinefunction(collect_orderbooks_job)
+    assert asyncio.iscoroutinefunction(collect_trades_job)
     assert asyncio.iscoroutinefunction(run_analysis_job)
     assert asyncio.iscoroutinefunction(cleanup_old_data_job)
 
