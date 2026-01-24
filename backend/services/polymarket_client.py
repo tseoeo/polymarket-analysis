@@ -100,16 +100,22 @@ class PolymarketClient:
                 outcomes = []
                 tokens = data.get("tokens", [])
                 for token in tokens:
-                    outcomes.append({
-                        "name": token.get("outcome", "Unknown"),
-                        "token_id": token.get("token_id"),
-                        "price": token.get("price"),
-                    })
+                    token_id = token.get("token_id")
+                    # Skip invalid token_ids (must be alphanumeric, reasonable length)
+                    if token_id and len(token_id) > 5 and token_id.isalnum():
+                        outcomes.append({
+                            "name": token.get("outcome", "Unknown"),
+                            "token_id": token_id,
+                            "price": token.get("price"),
+                        })
 
                 # Also check clobTokenIds if tokens is empty
                 if not outcomes:
                     clob_token_ids = data.get("clobTokenIds", [])
                     for i, token_id in enumerate(clob_token_ids):
+                        # Skip invalid token_ids
+                        if not token_id or len(token_id) < 5 or not token_id.isalnum():
+                            continue
                         outcome_name = "Yes" if i == 0 else "No" if i == 1 else f"Outcome {i+1}"
                         outcomes.append({
                             "name": outcome_name,
@@ -157,6 +163,8 @@ class PolymarketClient:
             return len(records)
         except Exception as e:
             logger.error(f"Bulk upsert failed: {e}")
+            # Rollback the failed transaction before fallback
+            await session.rollback()
             # Fallback to individual inserts for non-PostgreSQL or on error
             return await self._sync_markets_fallback(session, records)
 
