@@ -15,14 +15,16 @@ async def test_scheduler_registers_jobs():
 
         await start_scheduler()
 
-        # Should have added 6 jobs total:
+        # Should have added 8 jobs total:
         # 1. collect_markets (interval)
         # 2. collect_orderbooks (interval)
         # 3. collect_trades (interval)
         # 4. run_analysis (interval)
         # 5. cleanup_old_data (interval)
-        # 6. initial_market_sync (one-time)
-        assert mock_scheduler.add_job.call_count == 6
+        # 6. initial_market_sync (one-time, 5s delay)
+        # 7. initial_orderbook_sync (one-time, 45s delay)
+        # 8. initial_trade_sync (one-time, 60s delay)
+        assert mock_scheduler.add_job.call_count == 8
 
         # Verify job IDs
         job_ids = [call.kwargs.get("id") for call in mock_scheduler.add_job.call_args_list]
@@ -32,6 +34,8 @@ async def test_scheduler_registers_jobs():
         assert "run_analysis" in job_ids
         assert "cleanup_old_data" in job_ids
         assert "initial_market_sync" in job_ids
+        assert "initial_orderbook_sync" in job_ids
+        assert "initial_trade_sync" in job_ids
 
         # Scheduler should have been started
         mock_scheduler.start.assert_called_once()

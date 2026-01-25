@@ -45,6 +45,9 @@ class Settings(BaseSettings):
     volume_spike_threshold: float = 3.0  # 3x normal volume
     spread_alert_threshold: float = 0.05  # 5% spread
 
+    # System status endpoint access control
+    enable_system_status: bool = True  # Set ENABLE_SYSTEM_STATUS=false to disable
+
     class Config:
         env_file = ".env"
         case_sensitive = False
