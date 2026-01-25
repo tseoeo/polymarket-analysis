@@ -404,8 +404,8 @@ class PolymarketClient:
         params = {"token_id": token_id}
         return await self._get(url, params)
 
-    async def get_trades(self, token_id: str, limit: int = 100) -> list:
-        """Fetch recent trades for a token (requires API authentication)."""
+    async def get_trades_for_token(self, token_id: str, limit: int = 100) -> list:
+        """Fetch recent trades for a specific token (requires API authentication)."""
         if not self._has_api_credentials():
             logger.debug(f"Skipping trades fetch - no API credentials configured")
             return []
@@ -414,14 +414,25 @@ class PolymarketClient:
         path = "/data/trades"
         params = {"asset_id": token_id, "limit": limit}
         data = await self._get_authenticated(url, path, params)
+        return data.get("data", []) if isinstance(data, dict) else []
 
-        # Debug: log response structure for first few calls
-        if isinstance(data, dict):
-            logger.info(f"Trades response keys: {list(data.keys())}, data count: {len(data.get('data', []))}")
-        else:
-            logger.info(f"Trades response type: {type(data)}, len: {len(data) if isinstance(data, list) else 'N/A'}")
+    async def get_all_recent_trades(self, limit: int = 500) -> list:
+        """Fetch all recent trades (no filter) to test API."""
+        if not self._has_api_credentials():
+            return []
 
-        return data if isinstance(data, list) else data.get("data", [])
+        url = f"{self.clob_url}/data/trades"
+        path = "/data/trades"
+        params = {"limit": limit}
+        data = await self._get_authenticated(url, path, params)
+
+        trades = data.get("data", []) if isinstance(data, dict) else []
+        logger.info(f"All recent trades: {len(trades)} found")
+        return trades
+
+    async def get_trades(self, token_id: str, limit: int = 100) -> list:
+        """Fetch recent trades for a token (requires API authentication)."""
+        return await self.get_trades_for_token(token_id, limit)
 
     async def _fetch_single_orderbook(
         self,
@@ -537,6 +548,12 @@ class PolymarketClient:
         from models.trade import Trade
 
         logger.info("Collecting trades...")
+
+        # Debug: test if we can get ANY trades without filter
+        test_trades = await self.get_all_recent_trades(limit=10)
+        if test_trades:
+            logger.info(f"Test trades sample: {test_trades[0] if test_trades else 'none'}")
+
         since_timestamp = datetime.utcnow() - timedelta(minutes=settings.trade_lookback_minutes)
 
         # Get active markets with orderbook collection enabled
