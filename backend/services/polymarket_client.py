@@ -144,19 +144,18 @@ class PolymarketClient:
         base_delay=settings.api_retry_base_delay,
     )
     async def _get_authenticated(self, url: str, path: str, params: Optional[dict] = None) -> dict:
-        """Make authenticated GET request to CLOB API."""
+        """Make authenticated GET request to CLOB API.
+
+        Note: Per py-clob-client, only the base path is signed (no query params).
+        Query params are added to the URL after signing.
+        """
         if not self._has_api_credentials():
             raise ValueError("API credentials not configured for authenticated request")
 
         client = await self._get_client()
 
-        # Build full path with query params for signature
-        if params:
-            full_path = f"{path}?{urlencode(params)}"
-        else:
-            full_path = path
-
-        headers = self._get_auth_headers("GET", full_path)
+        # Sign only the base path (no query params) per py-clob-client
+        headers = self._get_auth_headers("GET", path)
         response = await client.get(url, params=params, headers=headers)
         response.raise_for_status()
         return response.json()
