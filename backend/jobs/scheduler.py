@@ -259,6 +259,23 @@ async def start_scheduler():
         replace_existing=True,
     )
 
+    # Schedule initial orderbook and trade collection after market sync completes
+    # Market sync takes ~30s, so schedule these at 45s and 60s after startup
+    scheduler.add_job(
+        collect_orderbooks_job,
+        DateTrigger(run_date=datetime.now() + timedelta(seconds=45)),
+        id="initial_orderbook_sync",
+        name="Initial orderbook collection",
+        replace_existing=True,
+    )
+    scheduler.add_job(
+        collect_trades_job,
+        DateTrigger(run_date=datetime.now() + timedelta(seconds=60)),
+        id="initial_trade_sync",
+        name="Initial trade collection",
+        replace_existing=True,
+    )
+
 
 async def stop_scheduler():
     """Stop the scheduler."""
