@@ -86,10 +86,11 @@ class PolymarketClient:
         self.api_key = settings.polymarket_api_key
         self.api_secret = settings.polymarket_api_secret
         self.api_passphrase = settings.polymarket_api_passphrase
+        self.wallet_address = settings.polymarket_wallet_address
 
     def _has_api_credentials(self) -> bool:
         """Check if API credentials are configured."""
-        return all([self.api_key, self.api_secret, self.api_passphrase])
+        return all([self.api_key, self.api_secret, self.api_passphrase, self.wallet_address])
 
     def _create_signature(self, timestamp: str, method: str, path: str, body: str = "") -> str:
         """Create HMAC-SHA256 signature for CLOB API authentication.
@@ -106,13 +107,14 @@ class PolymarketClient:
         return base64.urlsafe_b64encode(signature.digest()).decode()
 
     def _get_auth_headers(self, method: str, path: str, body: str = "") -> dict:
-        """Get authentication headers for CLOB API request."""
+        """Get Level 2 authentication headers for CLOB API request."""
         timestamp = str(int(time.time()))
         signature = self._create_signature(timestamp, method, path, body)
         return {
-            "POLY_API_KEY": self.api_key,
+            "POLY_ADDRESS": self.wallet_address,
             "POLY_SIGNATURE": signature,
             "POLY_TIMESTAMP": timestamp,
+            "POLY_API_KEY": self.api_key,
             "POLY_PASSPHRASE": self.api_passphrase,
         }
 

@@ -15,9 +15,11 @@ class Settings(BaseSettings):
     clob_api_url: str = "https://clob.polymarket.com"
 
     # Polymarket CLOB API credentials (for authenticated endpoints like /trades)
+    # Get these from your Polymarket account settings
     polymarket_api_key: Optional[str] = None
     polymarket_api_secret: Optional[str] = None
     polymarket_api_passphrase: Optional[str] = None
+    polymarket_wallet_address: Optional[str] = None  # Your wallet address (0x...)
 
     # Scheduler settings
     enable_scheduler: bool = False  # Set ENABLE_SCHEDULER=true on ONE worker only
