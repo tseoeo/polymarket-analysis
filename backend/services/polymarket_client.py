@@ -166,16 +166,41 @@ class PolymarketClient:
                         })
 
                 # Also check clobTokenIds if tokens is empty
+                # Note: Gamma API returns these as JSON strings, not arrays
                 if not outcomes:
-                    clob_token_ids = data.get("clobTokenIds", [])
+                    import json
+                    clob_token_ids_raw = data.get("clobTokenIds", [])
+                    outcome_names_raw = data.get("outcomes", [])
+
+                    # Parse JSON strings if needed
+                    if isinstance(clob_token_ids_raw, str):
+                        try:
+                            clob_token_ids = json.loads(clob_token_ids_raw)
+                        except json.JSONDecodeError:
+                            clob_token_ids = []
+                    else:
+                        clob_token_ids = clob_token_ids_raw or []
+
+                    if isinstance(outcome_names_raw, str):
+                        try:
+                            outcome_names = json.loads(outcome_names_raw)
+                        except json.JSONDecodeError:
+                            outcome_names = []
+                    else:
+                        outcome_names = outcome_names_raw or []
+
                     for i, token_id in enumerate(clob_token_ids):
                         # Skip invalid token_ids (length check only)
-                        if not token_id or len(token_id) < 10:
+                        if not token_id or len(str(token_id)) < 10:
                             continue
-                        outcome_name = "Yes" if i == 0 else "No" if i == 1 else f"Outcome {i+1}"
+                        # Use actual outcome name if available
+                        if i < len(outcome_names):
+                            outcome_name = outcome_names[i]
+                        else:
+                            outcome_name = "Yes" if i == 0 else "No" if i == 1 else f"Outcome {i+1}"
                         outcomes.append({
                             "name": outcome_name,
-                            "token_id": token_id,
+                            "token_id": str(token_id),
                             "price": None,
                         })
 
