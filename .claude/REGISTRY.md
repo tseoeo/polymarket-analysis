@@ -53,9 +53,14 @@
   - Findings: Verify CLOB token ID source (token_id vs condition_id); skip inactive/untradeable tokens; treat 404s as non-fatal and rely on backoff for 429s
   - Issues: I-001
 
-- D-007 | HMAC signature fix | Owner: Claude | 2026-01-25
-  - Outcome: Fixed 401 errors by using urlsafe_b64decode instead of b64decode for API secret
+- D-007 | HMAC signature fix (input) | Owner: Claude | 2026-01-25
+  - Outcome: Fixed secret decoding to use urlsafe_b64decode
   - Files: backend/services/polymarket_client.py:103
+  - Tests: not run (still getting 401 - output encoding also wrong)
+
+- D-009 | HMAC signature fix (output) | Owner: Claude | 2026-01-25
+  - Outcome: Fixed signature output to use urlsafe_b64encode (not b64encode)
+  - Files: backend/services/polymarket_client.py:105
   - Tests: not run (deployed, awaiting verification)
 
 - D-008 | Initial collection triggers | Owner: Claude | 2026-01-25
