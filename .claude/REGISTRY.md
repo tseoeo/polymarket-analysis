@@ -71,6 +71,11 @@
 - D-011 | Fix trades endpoint path | Owner: Claude | 2026-01-25
   - Outcome: Changed /trades to /data/trades, token_id to asset_id, trades to data
   - Files: backend/services/polymarket_client.py:405-415
+  - Tests: not run (CLOB trades endpoint only returns user's own trades - 0 found)
+
+- D-012 | Switch to Data API for trades | Owner: Claude | 2026-01-25
+  - Outcome: Use data-api.polymarket.com instead of CLOB API for public trade data
+  - Files: backend/services/polymarket_client.py
   - Tests: not run (deployed, awaiting verification)
 
 - D-008 | Initial collection triggers | Owner: Claude | 2026-01-25
