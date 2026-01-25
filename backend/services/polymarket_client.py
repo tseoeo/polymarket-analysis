@@ -412,8 +412,15 @@ class PolymarketClient:
 
         url = f"{self.clob_url}/data/trades"
         path = "/data/trades"
-        params = {"asset_id": token_id, "limit": limit}  # Note: asset_id not token_id
+        params = {"asset_id": token_id, "limit": limit}
         data = await self._get_authenticated(url, path, params)
+
+        # Debug: log response structure for first few calls
+        if isinstance(data, dict):
+            logger.info(f"Trades response keys: {list(data.keys())}, data count: {len(data.get('data', []))}")
+        else:
+            logger.info(f"Trades response type: {type(data)}, len: {len(data) if isinstance(data, list) else 'N/A'}")
+
         return data if isinstance(data, list) else data.get("data", [])
 
     async def _fetch_single_orderbook(
