@@ -546,7 +546,10 @@ class PolymarketClient:
                 return []
 
     async def collect_trades(self, session: AsyncSession) -> Tuple[int, int]:
-        """Collect trades for active markets with bounded concurrency.
+        """Collect trades by fetching all recent trades and filtering locally.
+
+        Instead of making hundreds of per-token requests, we fetch all recent
+        trades from the Data API in one call and filter by our tracked tokens.
 
         Returns:
             Tuple of (new_trades_count, duplicate_trades_skipped)
@@ -555,49 +558,56 @@ class PolymarketClient:
 
         logger.info("Collecting trades...")
 
-        # Debug: test if we can get ANY trades without filter
-        test_trades = await self.get_all_recent_trades(limit=10)
-        if test_trades:
-            logger.info(f"Test trades sample: {test_trades[0] if test_trades else 'none'}")
-
-        since_timestamp = datetime.utcnow() - timedelta(minutes=settings.trade_lookback_minutes)
-
         # Get active markets with orderbook collection enabled
         result = await session.execute(
             select(Market).where(Market.active == True, Market.enable_order_book == True)
         )
         markets = result.scalars().all()
 
-        # Build list of (token_id, market_id) pairs to fetch
-        fetch_tasks = []
+        # Build set of token_ids we care about and token->market mapping
+        token_to_market = {}
         for market in markets:
             for token_id in market.token_ids:
                 if token_id:
-                    fetch_tasks.append((token_id, market.id))
+                    token_to_market[token_id] = market.id
 
-        if not fetch_tasks:
+        if not token_to_market:
             logger.info("No tokens to collect trades for")
             return (0, 0)
 
-        # Use semaphore for rate limiting
-        semaphore = asyncio.Semaphore(settings.orderbook_concurrency)
+        logger.info(f"Tracking {len(token_to_market)} tokens across {len(markets)} markets")
 
-        # Fetch all trades concurrently
-        tasks = [
-            self._fetch_trades_for_token(tid, mid, semaphore, since_timestamp)
-            for tid, mid in fetch_tasks
-        ]
-        all_trade_lists = await asyncio.gather(*tasks)
+        # Fetch ALL recent trades in one request (much more efficient than per-token)
+        all_trades_data = await self.get_all_recent_trades(limit=1000)
+        logger.info(f"Fetched {len(all_trades_data)} recent trades from Data API")
 
-        # Flatten and deduplicate by trade_id (always present via compute_dedup_key)
+        # Filter to only trades for tokens we're tracking
+        since_timestamp = datetime.utcnow() - timedelta(minutes=settings.trade_lookback_minutes)
         all_trades = []
         seen_ids = set()
-        for trade_list in all_trade_lists:
-            for trade in trade_list:
+
+        for data in all_trades_data:
+            try:
+                # Data API uses 'asset' for token_id
+                token_id = data.get("asset") or data.get("asset_id") or data.get("token_id")
+                if not token_id or token_id not in token_to_market:
+                    continue  # Skip trades for tokens we don't track
+
+                market_id = token_to_market[token_id]
+                trade = Trade.from_api_response(token_id, market_id, data)
+
+                # Skip old trades and duplicates
+                if since_timestamp and trade.timestamp and trade.timestamp < since_timestamp:
+                    continue
                 if trade.trade_id in seen_ids:
                     continue
+                if not trade.is_valid():
+                    continue
+
                 seen_ids.add(trade.trade_id)
                 all_trades.append(trade)
+            except Exception as e:
+                logger.debug(f"Failed to parse trade: {e}")
 
         if not all_trades:
             logger.info("No new trades collected")
