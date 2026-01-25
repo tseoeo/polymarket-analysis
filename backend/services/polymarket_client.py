@@ -465,8 +465,10 @@ class PolymarketClient:
         logger.info("Collecting trades...")
         since_timestamp = datetime.utcnow() - timedelta(minutes=settings.trade_lookback_minutes)
 
-        # Get active markets
-        result = await session.execute(select(Market).where(Market.active == True))
+        # Get active markets with orderbook collection enabled
+        result = await session.execute(
+            select(Market).where(Market.active == True, Market.enable_order_book == True)
+        )
         markets = result.scalars().all()
 
         # Build list of (token_id, market_id) pairs to fetch
