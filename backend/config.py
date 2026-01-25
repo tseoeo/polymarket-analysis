@@ -17,7 +17,7 @@ class Settings(BaseSettings):
     # Scheduler settings
     enable_scheduler: bool = False  # Set ENABLE_SCHEDULER=true on ONE worker only
     scheduler_interval_minutes: int = 15
-    orderbook_concurrency: int = 10  # Max concurrent orderbook/trade fetches
+    orderbook_concurrency: int = 3  # Max concurrent orderbook/trade fetches (low to avoid 429s)
 
     # Trade collection settings
     trade_collection_interval_minutes: int = 5  # More frequent than orderbooks

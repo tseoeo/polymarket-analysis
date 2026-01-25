@@ -231,6 +231,10 @@ class PolymarketClient:
                     except Exception:
                         pass  # Ignore invalid dates
 
+                # Only enable orderbook collection for open markets with valid tokens
+                is_closed = data.get("closed", False)
+                has_valid_tokens = len(outcomes) > 0
+
                 records.append({
                     "id": market_id,
                     "condition_id": data.get("condition_id") or data.get("conditionId"),
@@ -243,6 +247,7 @@ class PolymarketClient:
                     "active": data.get("active", True),
                     "category": data.get("category"),
                     "end_date": end_date,
+                    "enable_order_book": has_valid_tokens and not is_closed,
                 })
             except Exception as e:
                 logger.warning(f"Failed to process market {data.get('id')}: {e}")
@@ -266,6 +271,7 @@ class PolymarketClient:
                     "active": stmt.excluded.active,
                     "category": stmt.excluded.category,
                     "end_date": stmt.excluded.end_date,
+                    "enable_order_book": stmt.excluded.enable_order_book,
                 },
             )
             await session.execute(stmt)
