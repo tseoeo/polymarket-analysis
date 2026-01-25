@@ -1,7 +1,10 @@
 """FastAPI application entry point."""
 
+import json
 import logging
+import os
 from contextlib import asynccontextmanager
+from datetime import datetime, timezone
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
@@ -11,11 +14,36 @@ from fastapi.responses import FileResponse
 from config import settings
 from database import init_db, close_db
 
-# Configure logging (with fallback to INFO for invalid levels)
-logging.basicConfig(
-    level=getattr(logging, settings.log_level.upper(), logging.INFO),
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-)
+
+class JSONFormatter(logging.Formatter):
+    """JSON log formatter for Railway compatibility."""
+
+    def format(self, record):
+        log_entry = {
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "level": record.levelname.lower(),
+            "logger": record.name,
+            "message": record.getMessage(),
+        }
+        if record.exc_info:
+            log_entry["exception"] = self.formatException(record.exc_info)
+        return json.dumps(log_entry)
+
+
+# Configure logging - use JSON in production (Railway), plain text locally
+log_level = getattr(logging, settings.log_level.upper(), logging.INFO)
+handler = logging.StreamHandler()
+
+if os.environ.get("RAILWAY_ENVIRONMENT"):
+    # JSON format for Railway
+    handler.setFormatter(JSONFormatter())
+else:
+    # Plain text for local development
+    handler.setFormatter(logging.Formatter(
+        "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    ))
+
+logging.basicConfig(level=log_level, handlers=[handler])
 logger = logging.getLogger(__name__)
 
 
