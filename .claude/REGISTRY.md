@@ -66,6 +66,11 @@
 - D-010 | HMAC signature fix (path) | Owner: Claude | 2026-01-25
   - Outcome: Sign only base path (/trades), not query params (?token_id=...)
   - Files: backend/services/polymarket_client.py:145-161
+  - Tests: not run (auth working, but 0 trades - wrong endpoint)
+
+- D-011 | Fix trades endpoint path | Owner: Claude | 2026-01-25
+  - Outcome: Changed /trades to /data/trades, token_id to asset_id, trades to data
+  - Files: backend/services/polymarket_client.py:405-415
   - Tests: not run (deployed, awaiting verification)
 
 - D-008 | Initial collection triggers | Owner: Claude | 2026-01-25
