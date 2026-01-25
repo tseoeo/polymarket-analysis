@@ -53,6 +53,16 @@
   - Findings: Verify CLOB token ID source (token_id vs condition_id); skip inactive/untradeable tokens; treat 404s as non-fatal and rely on backoff for 429s
   - Issues: I-001
 
+- D-007 | HMAC signature fix | Owner: Claude | 2026-01-25
+  - Outcome: Fixed 401 errors by using urlsafe_b64decode instead of b64decode for API secret
+  - Files: backend/services/polymarket_client.py:103
+  - Tests: not run (deployed, awaiting verification)
+
+- D-008 | Initial collection triggers | Owner: Claude | 2026-01-25
+  - Outcome: Added startup triggers for orderbook (45s) and trade (60s) collection
+  - Files: backend/jobs/scheduler.py
+  - Tests: not run (deployed, awaiting verification)
+
 ## Templates
 
 Queue:
