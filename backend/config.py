@@ -14,6 +14,11 @@ class Settings(BaseSettings):
     gamma_api_url: str = "https://gamma-api.polymarket.com"
     clob_api_url: str = "https://clob.polymarket.com"
 
+    # Polymarket CLOB API credentials (for authenticated endpoints like /trades)
+    polymarket_api_key: Optional[str] = None
+    polymarket_api_secret: Optional[str] = None
+    polymarket_api_passphrase: Optional[str] = None
+
     # Scheduler settings
     enable_scheduler: bool = False  # Set ENABLE_SCHEDULER=true on ONE worker only
     scheduler_interval_minutes: int = 15

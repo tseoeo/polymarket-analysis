@@ -6,10 +6,12 @@
 ## Open
 
 <!-- New issues go here -->
-- I-001 | [bug] | CLOB API returns 404 for many token IDs | Found by: Claude | 2025-01-25
-  - Context: Orderbook/trade collection fails with 404 Not Found for tokens from Gamma API
-  - Evidence: Railway logs show 404 for /book?token_id=... and /trades?token_id=...
-  - Suggested fix: Verify if Gamma API token IDs are valid for CLOB; may need different API endpoint or filtering
+
+## In Progress
+
+<!-- Issues being worked on -->
+- I-001 | [bug] | CLOB API returns 404 for many token IDs | Assigned: Claude | 2025-01-25
+  - Working on: Use Gamma API's enableOrderBook/acceptingOrders fields, reset old markets, await deployment verification
 
 ## In Progress
 

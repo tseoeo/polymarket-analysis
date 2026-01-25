@@ -1,11 +1,16 @@
 """Polymarket API client for Gamma and CLOB APIs."""
 
 import asyncio
+import base64
+import hashlib
+import hmac
 import logging
 import random
+import time
 from datetime import datetime, timedelta
 from functools import wraps
 from typing import Optional, Tuple
+from urllib.parse import urlencode
 import httpx
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -77,6 +82,33 @@ class PolymarketClient:
         self.timeout = httpx.Timeout(30.0)
         self._client: Optional[httpx.AsyncClient] = None
 
+        # API credentials for authenticated endpoints
+        self.api_key = settings.polymarket_api_key
+        self.api_secret = settings.polymarket_api_secret
+        self.api_passphrase = settings.polymarket_api_passphrase
+
+    def _has_api_credentials(self) -> bool:
+        """Check if API credentials are configured."""
+        return all([self.api_key, self.api_secret, self.api_passphrase])
+
+    def _create_signature(self, timestamp: str, method: str, path: str, body: str = "") -> str:
+        """Create HMAC-SHA256 signature for CLOB API authentication."""
+        message = f"{timestamp}{method}{path}{body}"
+        secret_bytes = base64.b64decode(self.api_secret)
+        signature = hmac.new(secret_bytes, message.encode(), hashlib.sha256)
+        return base64.b64encode(signature.digest()).decode()
+
+    def _get_auth_headers(self, method: str, path: str, body: str = "") -> dict:
+        """Get authentication headers for CLOB API request."""
+        timestamp = str(int(time.time()))
+        signature = self._create_signature(timestamp, method, path, body)
+        return {
+            "POLY_API_KEY": self.api_key,
+            "POLY_SIGNATURE": signature,
+            "POLY_TIMESTAMP": timestamp,
+            "POLY_PASSPHRASE": self.api_passphrase,
+        }
+
     async def _get_client(self) -> httpx.AsyncClient:
         """Get or create shared HTTP client."""
         if self._client is None or self._client.is_closed:
@@ -97,6 +129,28 @@ class PolymarketClient:
         """Make GET request with error handling and retry."""
         client = await self._get_client()
         response = await client.get(url, params=params)
+        response.raise_for_status()
+        return response.json()
+
+    @with_retry(
+        max_attempts=settings.api_max_retries,
+        base_delay=settings.api_retry_base_delay,
+    )
+    async def _get_authenticated(self, url: str, path: str, params: Optional[dict] = None) -> dict:
+        """Make authenticated GET request to CLOB API."""
+        if not self._has_api_credentials():
+            raise ValueError("API credentials not configured for authenticated request")
+
+        client = await self._get_client()
+
+        # Build full path with query params for signature
+        if params:
+            full_path = f"{path}?{urlencode(params)}"
+        else:
+            full_path = path
+
+        headers = self._get_auth_headers("GET", full_path)
+        response = await client.get(url, params=params, headers=headers)
         response.raise_for_status()
         return response.json()
 
@@ -343,10 +397,15 @@ class PolymarketClient:
         return await self._get(url, params)
 
     async def get_trades(self, token_id: str, limit: int = 100) -> list:
-        """Fetch recent trades for a token."""
+        """Fetch recent trades for a token (requires API authentication)."""
+        if not self._has_api_credentials():
+            logger.debug(f"Skipping trades fetch - no API credentials configured")
+            return []
+
         url = f"{self.clob_url}/trades"
+        path = "/trades"
         params = {"token_id": token_id, "limit": limit}
-        data = await self._get(url, params)
+        data = await self._get_authenticated(url, path, params)
         return data if isinstance(data, list) else data.get("trades", [])
 
     async def _fetch_single_orderbook(
