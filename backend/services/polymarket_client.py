@@ -92,10 +92,16 @@ class PolymarketClient:
         return all([self.api_key, self.api_secret, self.api_passphrase])
 
     def _create_signature(self, timestamp: str, method: str, path: str, body: str = "") -> str:
-        """Create HMAC-SHA256 signature for CLOB API authentication."""
-        message = f"{timestamp}{method}{path}{body}"
-        secret_bytes = base64.b64decode(self.api_secret)
-        signature = hmac.new(secret_bytes, message.encode(), hashlib.sha256)
+        """Create HMAC-SHA256 signature for CLOB API authentication.
+
+        Uses urlsafe_b64decode per Polymarket's py-clob-client implementation.
+        """
+        message = f"{timestamp}{method}{path}"
+        if body:
+            message += body
+        # Must use urlsafe_b64decode (not regular b64decode)
+        secret_bytes = base64.urlsafe_b64decode(self.api_secret)
+        signature = hmac.new(secret_bytes, message.encode('utf-8'), hashlib.sha256)
         return base64.b64encode(signature.digest()).decode()
 
     def _get_auth_headers(self, method: str, path: str, body: str = "") -> dict:
