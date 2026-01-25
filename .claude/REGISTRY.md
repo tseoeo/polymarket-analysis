@@ -76,6 +76,11 @@
 - D-012 | Switch to Data API for trades | Owner: Claude | 2026-01-25
   - Outcome: Use data-api.polymarket.com instead of CLOB API for public trade data
   - Files: backend/services/polymarket_client.py
+  - Tests: not run (429 rate limits from per-token requests)
+
+- D-013 | Optimize trade collection | Owner: Claude | 2026-01-25
+  - Outcome: Fetch all trades in 1 request, filter locally (was 500+ requests)
+  - Files: backend/services/polymarket_client.py:548-620
   - Tests: not run (deployed, awaiting verification)
 
 - D-008 | Initial collection triggers | Owner: Claude | 2026-01-25
