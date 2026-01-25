@@ -10,10 +10,6 @@
 ## In Progress
 
 <!-- Active work. Claude moves here when starting. -->
-- W-001 | CLOB API data collection | Owner: Claude | Started: 2025-01-25
-  - Scope: Fix 404/429 errors preventing orderbook/trade collection
-  - Files: backend/services/polymarket_client.py, backend/config.py
-  - Risks: Polymarket may have changed API; many tokens return 404
 
 ## Done
 
@@ -42,6 +38,20 @@
   - Outcome: Fixed parsing of clobTokenIds/outcomes as JSON strings from Gamma API
   - Files: backend/services/polymarket_client.py
   - Tests: not run (deployed, markets now sync with 10k+ records)
+
+- D-005 | CLOB API tradeable market filtering | Owner: Claude | 2025-01-25
+  - Outcome: Fixed 404/429 errors by only querying tradeable markets
+  - Files: backend/services/polymarket_client.py, backend/config.py
+  - Tests: not run (deployed, awaiting verification)
+
+- D-006 | Trade collection enable_order_book filter | Owner: Claude | 2025-01-25
+  - Outcome: Fixed trade collection to filter by enable_order_book=True (was querying all 20k markets)
+  - Files: backend/services/polymarket_client.py:469
+  - Tests: not run (deployed, awaiting verification)
+
+- D-005 | Review: D-005 | Reviewer: Codex | 2026-01-25
+  - Findings: Verify CLOB token ID source (token_id vs condition_id); skip inactive/untradeable tokens; treat 404s as non-fatal and rely on backoff for 429s
+  - Issues: I-001
 
 ## Templates
 
