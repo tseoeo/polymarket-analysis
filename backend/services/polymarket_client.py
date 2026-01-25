@@ -190,12 +190,19 @@ class PolymarketClient:
                     try:
                         if isinstance(end_date_raw, str):
                             from dateutil.parser import parse as parse_date
-                            end_date = parse_date(end_date_raw)
-                        elif isinstance(end_date_raw, (int, float)):
-                            if end_date_raw > 1e12:
-                                end_date = datetime.fromtimestamp(end_date_raw / 1000)
+                            parsed = parse_date(end_date_raw)
+                            # Convert to naive UTC if timezone-aware
+                            if parsed.tzinfo is not None:
+                                from datetime import timezone
+                                end_date = parsed.astimezone(timezone.utc).replace(tzinfo=None)
                             else:
-                                end_date = datetime.fromtimestamp(end_date_raw)
+                                end_date = parsed
+                        elif isinstance(end_date_raw, (int, float)):
+                            # Use utcfromtimestamp to get naive UTC datetime
+                            if end_date_raw > 1e12:
+                                end_date = datetime.utcfromtimestamp(end_date_raw / 1000)
+                            else:
+                                end_date = datetime.utcfromtimestamp(end_date_raw)
                     except Exception:
                         pass  # Ignore invalid dates
 
