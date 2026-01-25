@@ -61,6 +61,11 @@
 - D-009 | HMAC signature fix (output) | Owner: Claude | 2026-01-25
   - Outcome: Fixed signature output to use urlsafe_b64encode (not b64encode)
   - Files: backend/services/polymarket_client.py:105
+  - Tests: not run (still 401 - query params shouldn't be signed)
+
+- D-010 | HMAC signature fix (path) | Owner: Claude | 2026-01-25
+  - Outcome: Sign only base path (/trades), not query params (?token_id=...)
+  - Files: backend/services/polymarket_client.py:145-161
   - Tests: not run (deployed, awaiting verification)
 
 - D-008 | Initial collection triggers | Owner: Claude | 2026-01-25
