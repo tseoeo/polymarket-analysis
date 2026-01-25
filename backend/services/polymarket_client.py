@@ -410,11 +410,11 @@ class PolymarketClient:
             logger.debug(f"Skipping trades fetch - no API credentials configured")
             return []
 
-        url = f"{self.clob_url}/trades"
-        path = "/trades"
-        params = {"token_id": token_id, "limit": limit}
+        url = f"{self.clob_url}/data/trades"
+        path = "/data/trades"
+        params = {"asset_id": token_id, "limit": limit}  # Note: asset_id not token_id
         data = await self._get_authenticated(url, path, params)
-        return data if isinstance(data, list) else data.get("trades", [])
+        return data if isinstance(data, list) else data.get("data", [])
 
     async def _fetch_single_orderbook(
         self,
