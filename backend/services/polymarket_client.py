@@ -405,30 +405,36 @@ class PolymarketClient:
         return await self._get(url, params)
 
     async def get_trades_for_token(self, token_id: str, limit: int = 100) -> list:
-        """Fetch recent trades for a specific token (requires API authentication)."""
-        if not self._has_api_credentials():
-            logger.debug(f"Skipping trades fetch - no API credentials configured")
-            return []
-
-        url = f"{self.clob_url}/data/trades"
-        path = "/data/trades"
+        """Fetch recent trades for a specific token from public Data API."""
+        data_api_url = "https://data-api.polymarket.com"
+        url = f"{data_api_url}/trades"
         params = {"asset_id": token_id, "limit": limit}
-        data = await self._get_authenticated(url, path, params)
-        return data.get("data", []) if isinstance(data, dict) else []
+
+        try:
+            data = await self._get(url, params)
+            trades = data if isinstance(data, list) else data.get("data", data.get("trades", []))
+            return trades
+        except Exception as e:
+            logger.debug(f"Failed to fetch trades for {token_id}: {e}")
+            return []
 
     async def get_all_recent_trades(self, limit: int = 500) -> list:
-        """Fetch all recent trades (no filter) to test API."""
-        if not self._has_api_credentials():
-            return []
-
-        url = f"{self.clob_url}/data/trades"
-        path = "/data/trades"
+        """Fetch recent trades from public Data API (no auth required)."""
+        # Data API is public and returns all platform trades
+        data_api_url = "https://data-api.polymarket.com"
+        url = f"{data_api_url}/trades"
         params = {"limit": limit}
-        data = await self._get_authenticated(url, path, params)
 
-        trades = data.get("data", []) if isinstance(data, dict) else []
-        logger.info(f"All recent trades: {len(trades)} found")
-        return trades
+        try:
+            data = await self._get(url, params)
+            trades = data if isinstance(data, list) else data.get("data", data.get("trades", []))
+            logger.info(f"All recent trades from Data API: {len(trades)} found")
+            if trades:
+                logger.info(f"Sample trade keys: {list(trades[0].keys()) if trades else 'none'}")
+            return trades
+        except Exception as e:
+            logger.warning(f"Failed to fetch from Data API: {e}")
+            return []
 
     async def get_trades(self, token_id: str, limit: int = 100) -> list:
         """Fetch recent trades for a token (requires API authentication)."""
