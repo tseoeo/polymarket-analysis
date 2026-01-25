@@ -103,9 +103,9 @@ class PolymarketClient:
     # ========== Gamma API (Market Metadata) ==========
 
     async def get_markets(self, limit: int = 100, offset: int = 0) -> list:
-        """Fetch markets from Gamma API."""
+        """Fetch markets from Gamma API (only active, non-closed markets)."""
         url = f"{self.gamma_url}/markets"
-        params = {"limit": limit, "offset": offset, "active": "true"}
+        params = {"limit": limit, "offset": offset, "active": "true", "closed": "false"}
         return await self._get(url, params)
 
     async def get_all_markets(self) -> list:
@@ -141,6 +141,14 @@ class PolymarketClient:
         if not markets_data:
             logger.info("No markets returned from API")
             return 0
+
+        # Disable orderbook collection for all existing markets first
+        # The upsert will re-enable only for markets that are currently tradeable
+        from sqlalchemy import update
+        await session.execute(
+            update(Market).values(enable_order_book=False)
+        )
+        logger.info("Reset enable_order_book for all existing markets")
 
         # Prepare records for bulk upsert
         records = []
@@ -231,9 +239,20 @@ class PolymarketClient:
                     except Exception:
                         pass  # Ignore invalid dates
 
-                # Only enable orderbook collection for open markets with valid tokens
+                # Use Gamma API's enableOrderBook and acceptingOrders fields
+                # Only collect orderbooks for markets that are actually tradeable
+                api_enable_orderbook = data.get("enableOrderBook", False)
+                accepting_orders = data.get("acceptingOrders", False)
                 is_closed = data.get("closed", False)
                 has_valid_tokens = len(outcomes) > 0
+
+                # Enable orderbook only if API says so AND market is accepting orders
+                should_enable = (
+                    has_valid_tokens
+                    and api_enable_orderbook
+                    and accepting_orders
+                    and not is_closed
+                )
 
                 records.append({
                     "id": market_id,
@@ -247,7 +266,7 @@ class PolymarketClient:
                     "active": data.get("active", True),
                     "category": data.get("category"),
                     "end_date": end_date,
-                    "enable_order_book": has_valid_tokens and not is_closed,
+                    "enable_order_book": should_enable,
                 })
             except Exception as e:
                 logger.warning(f"Failed to process market {data.get('id')}: {e}")

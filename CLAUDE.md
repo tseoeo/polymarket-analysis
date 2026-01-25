@@ -40,3 +40,17 @@ Phase 3 complete - Analysis engine with:
 - SpreadAnalyzer (5% threshold)
 - MarketMakerAnalyzer (50% depth drop)
 - ArbitrageDetector (2% min profit, orderbook-first with market price fallback)
+
+---
+
+## Coordination with Codex
+
+Read `AGENTS.md` for the coordination protocol.
+You are the **builder** and the only one who moves registry items.
+
+Quick reference:
+1. Read `.claude/REGISTRY.md` and `.claude/ISSUES.md`
+2. Pick or create a Queue item (Q-###)
+3. Move to In Progress (W-###) when starting
+4. Move to Done (D-###) when finished
+5. Log any issues you find in `.claude/ISSUES.md`
