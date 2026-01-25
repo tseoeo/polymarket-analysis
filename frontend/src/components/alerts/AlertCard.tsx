@@ -2,18 +2,26 @@ import { Link } from 'react-router-dom';
 import { Card } from '@/components/ui/Card';
 import { SeverityBadge, TypeBadge } from '@/components/ui/Badge';
 import { formatRelativeTime } from '@/lib/utils';
+import { getAlertExplanation } from '@/lib/explanations';
+import { ArrowRight } from 'lucide-react';
 import type { Alert } from '@/types';
 
 interface AlertCardProps {
   alert: Alert;
+  showExplanation?: boolean;
 }
 
-export function AlertCard({ alert }: AlertCardProps) {
+export function AlertCard({ alert, showExplanation = true }: AlertCardProps) {
+  const explanation = getAlertExplanation(alert.alert_type);
+
   return (
     <Link to={`/alerts/${alert.id}`}>
-      <Card hover className="h-full">
+      <Card hover className="h-full flex flex-col">
         <div className="flex items-start justify-between gap-3 mb-2">
           <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-lg" role="img" aria-label={explanation.title}>
+              {explanation.icon}
+            </span>
             <TypeBadge type={alert.alert_type} />
             <SeverityBadge severity={alert.severity} />
           </div>
@@ -26,19 +34,23 @@ export function AlertCard({ alert }: AlertCardProps) {
           {alert.title}
         </h4>
 
+        {showExplanation && (
+          <p className="text-sm text-emerald-700 bg-emerald-50 rounded px-2 py-1.5 mb-2">
+            <span className="font-medium">Opportunity:</span> {explanation.opportunity}
+          </p>
+        )}
+
         {alert.description && (
-          <p className="text-sm text-gray-500 line-clamp-2 mb-3">
+          <p className="text-sm text-gray-500 line-clamp-2 mb-3 flex-grow">
             {alert.description}
           </p>
         )}
 
-        <div className="flex items-center justify-between text-xs text-gray-400">
+        <div className="flex items-center justify-between text-xs text-gray-400 mt-auto pt-2 border-t border-gray-100">
           <span>{formatRelativeTime(alert.created_at)}</span>
-          {alert.market_id && (
-            <span className="truncate max-w-[120px]">
-              {alert.market_id.slice(0, 8)}...
-            </span>
-          )}
+          <span className="flex items-center gap-1 text-blue-600">
+            View details <ArrowRight className="w-3 h-3" />
+          </span>
         </div>
       </Card>
     </Link>

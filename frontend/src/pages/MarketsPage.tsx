@@ -3,9 +3,10 @@ import { MarketCard } from '@/components/markets/MarketCard';
 import { Pagination } from '@/components/ui/Pagination';
 import { LoadingState } from '@/components/ui/LoadingSpinner';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { InfoBox } from '@/components/ui/Tooltip';
 import { useMarkets } from '@/hooks';
 import { cn } from '@/lib/utils';
-import { BarChart3 } from 'lucide-react';
+import { BarChart3, Bell } from 'lucide-react';
 
 const ITEMS_PER_PAGE = 12;
 
@@ -22,8 +23,8 @@ const activeOptions: FilterOption[] = [
 
 const alertOptions: FilterOption[] = [
   { value: '', label: 'All Markets' },
-  { value: 'true', label: 'With Alerts' },
-  { value: 'false', label: 'No Alerts' },
+  { value: 'true', label: 'With Opportunities' },
+  { value: 'false', label: 'No Opportunities' },
 ];
 
 export function MarketsPage() {
@@ -52,10 +53,31 @@ export function MarketsPage() {
     'text-gray-700'
   );
 
+  const marketsWithAlerts = data?.markets.filter(m => m.active_alerts > 0).length || 0;
+
   return (
     <div className="page-container">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-semibold text-gray-900">Markets</h1>
+      {/* Header */}
+      <div className="mb-6">
+        <h1 className="text-2xl font-semibold text-gray-900 mb-2">
+          Monitored Markets
+        </h1>
+        <p className="text-gray-600 max-w-2xl">
+          Browse prediction markets being analyzed. Markets with a bell icon have active opportunities.
+          Click any market to see current prices and related alerts.
+        </p>
+      </div>
+
+      {/* Quick tip for finding opportunities */}
+      {hasAlerts !== 'true' && marketsWithAlerts > 0 && (
+        <InfoBox variant="tip" className="mb-6">
+          <span className="font-medium">{marketsWithAlerts} markets</span> on this page have active opportunities.
+          Use the "With Opportunities" filter to focus on markets where our scanner detected something interesting.
+        </InfoBox>
+      )}
+
+      {/* Filters */}
+      <div className="flex items-center justify-between gap-4 mb-6 flex-wrap">
         <div className="flex gap-3">
           <select
             value={active}
@@ -81,8 +103,27 @@ export function MarketsPage() {
             ))}
           </select>
         </div>
+
+        {data && (
+          <p className="text-sm text-gray-500">
+            {data.total.toLocaleString()} markets
+          </p>
+        )}
       </div>
 
+      {/* Understanding the cards */}
+      {offset === 0 && !isLoading && data?.markets.length ? (
+        <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+          <p className="text-sm font-medium text-gray-700 mb-2">Reading Market Cards:</p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs text-gray-600">
+            <div><span className="font-medium text-green-600">Yes %</span> = Probability market resolves Yes</div>
+            <div><span className="font-medium text-red-600">No %</span> = Probability market resolves No</div>
+            <div><span className="inline-flex items-center"><Bell className="w-3 h-3 mr-1 text-amber-500" />Number</span> = Active opportunities in this market</div>
+          </div>
+        </div>
+      ) : null}
+
+      {/* Markets Grid */}
       {isLoading ? (
         <LoadingState message="Loading markets..." />
       ) : error ? (
@@ -95,7 +136,9 @@ export function MarketsPage() {
         <EmptyState
           icon={<BarChart3 className="w-6 h-6 text-gray-400" />}
           title="No markets found"
-          description="Try adjusting your filters."
+          description={hasAlerts === 'true'
+            ? "No markets with active opportunities. Try removing the filter or check back later."
+            : "Try adjusting your filters."}
         />
       ) : (
         <>
