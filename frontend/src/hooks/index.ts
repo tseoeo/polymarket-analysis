@@ -5,3 +5,4 @@ export * from './useArbitrage';
 export * from './useOrderbook';
 export * from './useVolume';
 export * from './useMarketMaker';
+export * from './useBriefing';

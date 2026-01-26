@@ -7,3 +7,6 @@ export * from './ArbitragePage';
 export * from './OrderBookPage';
 export * from './VolumePage';
 export * from './MarketMakerPage';
+export * from './DailyBriefingPage';
+export * from './OpportunityDetailPage';
+export * from './WatchlistPage';

@@ -10,6 +10,9 @@ import {
   OrderBookPage,
   VolumePage,
   MarketMakerPage,
+  DailyBriefingPage,
+  OpportunityDetailPage,
+  WatchlistPage,
 } from '@/pages';
 
 function App() {
@@ -17,7 +20,11 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Layout />}>
-          <Route index element={<Dashboard />} />
+          <Route index element={<DailyBriefingPage />} />
+          <Route path="briefing" element={<DailyBriefingPage />} />
+          <Route path="opportunity/:marketId" element={<OpportunityDetailPage />} />
+          <Route path="watchlist" element={<WatchlistPage />} />
+          <Route path="dashboard" element={<Dashboard />} />
           <Route path="alerts" element={<AlertsPage />} />
           <Route path="alerts/:id" element={<AlertDetailPage />} />
           <Route path="markets" element={<MarketsPage />} />

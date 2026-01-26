@@ -7,6 +7,7 @@ from .alert import Alert
 from .job_run import JobRun
 from .relationship import MarketRelationship
 from .volume_stats import VolumeStats
+from .watchlist import WatchlistItem
 
 __all__ = [
     "Market",
@@ -16,4 +17,5 @@ __all__ = [
     "JobRun",
     "MarketRelationship",
     "VolumeStats",
+    "WatchlistItem",
 ]

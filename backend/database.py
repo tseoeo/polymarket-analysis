@@ -40,7 +40,7 @@ def import_models():
     This must be called before create_all() to ensure all tables are created.
     Models use deferred imports to avoid circular dependencies.
     """
-    from models import market, orderbook, trade, alert, job_run, relationship, volume_stats  # noqa: F401
+    from models import market, orderbook, trade, alert, job_run, relationship, volume_stats, watchlist  # noqa: F401
 
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
