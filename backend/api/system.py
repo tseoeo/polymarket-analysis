@@ -242,6 +242,42 @@ def determine_health_status(
         return "healthy"
 
 
+class TriggerJobResponse(BaseModel):
+    """Response from job trigger endpoint."""
+
+    job_id: str
+    message: str
+    alerts_generated: Optional[int] = None
+
+
+@router.post("/trigger-analysis", response_model=TriggerJobResponse)
+async def trigger_analysis():
+    """Manually trigger the analysis job.
+
+    Runs all analyzers (volume, spread, market maker, arbitrage) and
+    generates alerts for any detected opportunities.
+    """
+    if not settings.enable_system_status:
+        raise HTTPException(
+            status_code=404,
+            detail="System endpoints are disabled",
+        )
+
+    from jobs.scheduler import run_analysis_job
+
+    try:
+        await run_analysis_job()
+        return TriggerJobResponse(
+            job_id="run_analysis",
+            message="Analysis job completed successfully",
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Analysis job failed: {str(e)}",
+        )
+
+
 @router.get("/status", response_model=SystemStatusResponse)
 async def get_system_status(
     include_counts: bool = Query(
