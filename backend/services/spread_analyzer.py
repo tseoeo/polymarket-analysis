@@ -99,11 +99,12 @@ class SpreadAnalyzer:
             if alert_key in existing_alerts:
                 continue
 
-            # Create alert
+            # Create alert (convert Decimals to floats for JSON serialization)
+            spread_pct_float = float(snapshot.spread_pct)
             alert = Alert.create_spread_alert(
                 market_id=market_id,
-                title=f"Wide spread: {snapshot.spread_pct:.1%}",
-                spread_pct=snapshot.spread_pct,
+                title=f"Wide spread: {spread_pct_float:.1%}",
+                spread_pct=spread_pct_float,
                 data={
                     "spread": float(snapshot.spread) if snapshot.spread else None,
                     "best_bid": float(snapshot.best_bid) if snapshot.best_bid else None,
