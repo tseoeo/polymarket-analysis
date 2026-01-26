@@ -157,7 +157,10 @@ async def test_orderbook_metrics_calculation():
 
 @pytest.mark.asyncio
 async def test_orderbook_imbalance_calculation():
-    """OrderBookSnapshot should calculate imbalance correctly."""
+    """OrderBookSnapshot should calculate imbalance correctly.
+
+    Note: Depth is now calculated in dollars (price * size), not shares.
+    """
     from models.orderbook import OrderBookSnapshot
 
     # Heavy bid side = positive imbalance (buying pressure)
@@ -168,8 +171,11 @@ async def test_orderbook_imbalance_calculation():
 
     snapshot = OrderBookSnapshot.from_api_response("t", "m", api_data)
 
-    # imbalance = (200 - 100) / (200 + 100) = 100/300 = 0.333
-    assert snapshot.imbalance == pytest.approx(0.333, rel=1e-2)
+    # Depth now in dollars:
+    # bid_depth_1pct = 0.50 * 200 = $100
+    # ask_depth_1pct = 0.51 * 100 = $51
+    # imbalance = (100 - 51) / (100 + 51) = 49/151 = 0.3245
+    assert snapshot.imbalance == pytest.approx(0.3245, rel=1e-2)
 
 
 @pytest.mark.asyncio

@@ -1,5 +1,14 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Bell, BarChart3, Activity } from 'lucide-react';
+import {
+  LayoutDashboard,
+  Bell,
+  BarChart3,
+  Activity,
+  GitBranch,
+  BookOpen,
+  TrendingUp,
+  Users,
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface NavItem {
@@ -10,7 +19,11 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { to: '/', icon: <LayoutDashboard className="w-5 h-5" />, label: 'Dashboard' },
-  { to: '/alerts', icon: <Bell className="w-5 h-5" />, label: 'Alerts' },
+  { to: '/alerts', icon: <Bell className="w-5 h-5" />, label: 'Opportunities' },
+  { to: '/arbitrage', icon: <GitBranch className="w-5 h-5" />, label: 'Arbitrage' },
+  { to: '/orderbook', icon: <BookOpen className="w-5 h-5" />, label: 'Order Book' },
+  { to: '/volume', icon: <TrendingUp className="w-5 h-5" />, label: 'Volume' },
+  { to: '/mm', icon: <Users className="w-5 h-5" />, label: 'Market Makers' },
   { to: '/markets', icon: <BarChart3 className="w-5 h-5" />, label: 'Markets' },
 ];
 

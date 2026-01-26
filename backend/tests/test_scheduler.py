@@ -15,16 +15,17 @@ async def test_scheduler_registers_jobs():
 
         await start_scheduler()
 
-        # Should have added 8 jobs total:
+        # Should have added 9 jobs total:
         # 1. collect_markets (interval)
         # 2. collect_orderbooks (interval)
         # 3. collect_trades (interval)
         # 4. run_analysis (interval)
         # 5. cleanup_old_data (interval)
-        # 6. initial_market_sync (one-time, 5s delay)
-        # 7. initial_orderbook_sync (one-time, 45s delay)
-        # 8. initial_trade_sync (one-time, 60s delay)
-        assert mock_scheduler.add_job.call_count == 8
+        # 6. aggregate_volume (interval - hourly)
+        # 7. initial_market_sync (one-time, 5s delay)
+        # 8. initial_orderbook_sync (one-time, 45s delay)
+        # 9. initial_trade_sync (one-time, 60s delay)
+        assert mock_scheduler.add_job.call_count == 9
 
         # Verify job IDs
         job_ids = [call.kwargs.get("id") for call in mock_scheduler.add_job.call_args_list]
@@ -33,6 +34,7 @@ async def test_scheduler_registers_jobs():
         assert "collect_trades" in job_ids
         assert "run_analysis" in job_ids
         assert "cleanup_old_data" in job_ids
+        assert "aggregate_volume" in job_ids
         assert "initial_market_sync" in job_ids
         assert "initial_orderbook_sync" in job_ids
         assert "initial_trade_sync" in job_ids
@@ -98,6 +100,7 @@ async def test_scheduler_job_functions_exist():
         collect_trades_job,
         run_analysis_job,
         cleanup_old_data_job,
+        aggregate_volume_job,
     )
 
     # All should be coroutine functions
@@ -108,6 +111,7 @@ async def test_scheduler_job_functions_exist():
     assert asyncio.iscoroutinefunction(collect_trades_job)
     assert asyncio.iscoroutinefunction(run_analysis_job)
     assert asyncio.iscoroutinefunction(cleanup_old_data_job)
+    assert asyncio.iscoroutinefunction(aggregate_volume_job)
 
 
 @pytest.mark.asyncio

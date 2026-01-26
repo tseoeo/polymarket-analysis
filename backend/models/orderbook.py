@@ -93,7 +93,10 @@ class OrderBookSnapshot(Base):
 
         # Calculate depth at 1% and 5%
         def calculate_depth(levels: list, best_price: float, pct: float, is_bid: bool) -> float:
-            """Calculate total size within percentage of best price.
+            """Calculate total dollar depth within percentage of best price.
+
+            Note: Orderbook "size" is in shares, not dollars. We convert to dollars
+            by multiplying price * size for each level.
 
             Handles edge cases:
             - Empty levels list
@@ -116,9 +119,11 @@ class OrderBookSnapshot(Base):
                         continue
 
                     if is_bid and price >= threshold:
-                        total += size
+                        # Convert shares to dollars: price * size
+                        total += price * size
                     elif not is_bid and price <= threshold:
-                        total += size
+                        # Convert shares to dollars: price * size
+                        total += price * size
                 except (TypeError, ValueError):
                     # Skip malformed levels
                     continue

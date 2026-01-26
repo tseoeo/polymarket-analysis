@@ -225,6 +225,25 @@ async def run_analysis_job():
         )
 
 
+async def aggregate_volume_job():
+    """Job: Aggregate trade data into VolumeStats for analytics."""
+    async with track_job_run("aggregate_volume") as run_id:
+        from services.volume_analyzer import aggregate_volume_stats
+        from database import async_session_maker
+
+        async with async_session_maker() as session:
+            # Aggregate hourly stats (runs every hour)
+            hourly_count = await aggregate_volume_stats(session, "hour")
+
+            # Also aggregate daily stats once per day (at midnight UTC)
+            now = datetime.utcnow()
+            if now.hour == 0:
+                daily_count = await aggregate_volume_stats(session, "day")
+                hourly_count += daily_count
+
+        await update_job_records("aggregate_volume", run_id, hourly_count)
+
+
 async def cleanup_old_data_job():
     """Job: Expire stale alerts and remove old data."""
     async with track_job_run("cleanup_old_data") as run_id:
@@ -310,6 +329,15 @@ async def start_scheduler():
         IntervalTrigger(hours=1),
         id="run_analysis",
         name="Run analysis and generate alerts",
+        replace_existing=True,
+    )
+
+    # Volume aggregation job - runs every hour
+    scheduler.add_job(
+        aggregate_volume_job,
+        IntervalTrigger(hours=1),
+        id="aggregate_volume",
+        name="Aggregate volume statistics",
         replace_existing=True,
     )
 

@@ -45,8 +45,24 @@ class Settings(BaseSettings):
     volume_spike_threshold: float = 3.0  # 3x normal volume
     spread_alert_threshold: float = 0.05  # 5% spread
 
+    # Cross-market arbitrage settings
+    arb_min_liquidity: float = 1000.0  # Minimum liquidity for arbitrage opportunities
+
+    # Volume analysis settings
+    volume_baseline_days: int = 7  # Days of history for baseline calculation
+    volume_acceleration_threshold: float = 0.5  # 50% increase signals acceleration
+
+    # Orderbook analysis settings
+    orderbook_depth_levels: str = "0.01,0.05,0.10"  # Price levels for depth analysis
+    orderbook_max_age_minutes: int = 30  # Max age for "current" snapshot
+
     # System status endpoint access control
     enable_system_status: bool = True  # Set ENABLE_SYSTEM_STATUS=false to disable
+
+    @property
+    def orderbook_depth_levels_list(self) -> list:
+        """Parse orderbook depth levels from comma-separated string."""
+        return [float(x) for x in self.orderbook_depth_levels.split(",")]
 
     class Config:
         env_file = ".env"

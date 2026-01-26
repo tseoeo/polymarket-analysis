@@ -3,3 +3,7 @@ export * from './AlertsPage';
 export * from './AlertDetailPage';
 export * from './MarketsPage';
 export * from './MarketDetailPage';
+export * from './ArbitragePage';
+export * from './OrderBookPage';
+export * from './VolumePage';
+export * from './MarketMakerPage';

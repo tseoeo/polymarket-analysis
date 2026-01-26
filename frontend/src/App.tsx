@@ -6,6 +6,10 @@ import {
   AlertDetailPage,
   MarketsPage,
   MarketDetailPage,
+  ArbitragePage,
+  OrderBookPage,
+  VolumePage,
+  MarketMakerPage,
 } from '@/pages';
 
 function App() {
@@ -18,6 +22,10 @@ function App() {
           <Route path="alerts/:id" element={<AlertDetailPage />} />
           <Route path="markets" element={<MarketsPage />} />
           <Route path="markets/:id" element={<MarketDetailPage />} />
+          <Route path="arbitrage" element={<ArbitragePage />} />
+          <Route path="orderbook" element={<OrderBookPage />} />
+          <Route path="volume" element={<VolumePage />} />
+          <Route path="mm" element={<MarketMakerPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

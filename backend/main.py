@@ -120,11 +120,15 @@ async def api_info():
 
 
 # Include API routers
-from api import alerts, markets, system
+from api import alerts, markets, system, arbitrage, orderbook, volume, mm
 
 app.include_router(alerts.router, prefix="/api/alerts", tags=["Alerts"])
 app.include_router(markets.router, prefix="/api/markets", tags=["Markets"])
 app.include_router(system.router, prefix="/api/system", tags=["System"])
+app.include_router(arbitrage.router, prefix="/api/arbitrage", tags=["Arbitrage"])
+app.include_router(orderbook.router, prefix="/api/orderbook", tags=["Orderbook"])
+app.include_router(volume.router, prefix="/api/volume", tags=["Volume"])
+app.include_router(mm.router, prefix="/api/mm", tags=["Market Maker"])
 
 
 # Serve React frontend (static files) - only if frontend is built
