@@ -281,6 +281,18 @@ async def cleanup_old_data_job():
             )
             await session.commit()
 
+        # Run VACUUM (ANALYZE) outside a transaction to reclaim disk space
+        try:
+            from database import engine
+            from sqlalchemy import text as sa_text
+
+            async with engine.connect() as conn:
+                conn = await conn.execution_options(isolation_level="AUTOCOMMIT")
+                await conn.execute(sa_text("VACUUM (ANALYZE)"))
+            logger.info("VACUUM (ANALYZE) completed after cleanup")
+        except Exception as e:
+            logger.warning(f"VACUUM after cleanup failed (non-fatal): {e}")
+
         await update_job_records("cleanup_old_data", run_id, expired_count)
         logger.info(
             f"Cleanup complete: {expired_count} alerts expired, "

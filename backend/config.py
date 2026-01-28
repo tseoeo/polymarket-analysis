@@ -35,7 +35,7 @@ class Settings(BaseSettings):
     api_retry_base_delay: float = 1.0  # Base delay in seconds
 
     # Data retention
-    data_retention_days: int = 30
+    data_retention_days: int = 7
 
     # Logging
     log_level: str = "INFO"

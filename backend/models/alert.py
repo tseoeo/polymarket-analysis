@@ -42,7 +42,7 @@ class Alert(Base):
 
     # Status
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
-    dismissed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    dismissed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True, index=True)
 
     # Timestamps
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
