@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import select, delete
+from sqlalchemy import select, delete, or_, cast, String
 from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import BaseModel
 
@@ -107,7 +107,10 @@ async def get_watchlist(
         # Count alerts since last view
         from models.alert import Alert
         alert_query = select(Alert).where(
-            Alert.related_market_ids.contains([item.market_id])
+            or_(
+                Alert.market_id == item.market_id,
+                cast(Alert.related_market_ids, String).like(f'%"{item.market_id}"%'),
+            )
         ).where(Alert.is_active == True)
 
         if item.last_viewed_at:

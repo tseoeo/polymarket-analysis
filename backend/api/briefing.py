@@ -34,6 +34,8 @@ class MetricsResponse(BaseModel):
     best_ask: Optional[float] = None
     signal_count: int = 0
     active_signals: List[str] = []
+    volume_ratio: Optional[float] = None
+    slippage_100_eur: Optional[float] = None
 
 
 class ScoresResponse(BaseModel):
@@ -139,10 +141,15 @@ def generate_teach_me_content(opp: dict) -> dict:
             "This market has unusual trading volume. High volume often indicates "
             "new information or changing sentiment. It can mean opportunity, but also risk."
         )
-    elif "spread_opportunity" in signals:
+    elif "spread_alert" in signals:
         what_signal_means = (
             "The bid-ask spread on this market is wider than usual, which can mean "
             "less competition from market makers. You might get better fills."
+        )
+    elif "mm_pullback" in signals:
+        what_signal_means = (
+            "Market makers have pulled back liquidity in this market. This often precedes "
+            "significant price movement and can create short-term opportunities."
         )
     else:
         what_signal_means = (
@@ -309,6 +316,8 @@ async def get_opportunity_detail(
             "best_ask": score.metrics.best_ask,
             "signal_count": score.metrics.signal_count,
             "active_signals": score.metrics.active_signals,
+            "volume_ratio": score.metrics.volume_ratio,
+            "slippage_100_eur": score.metrics.slippage_100_eur,
         },
         "why_safe": score.why_safe,
         "what_could_go_wrong": score.what_could_go_wrong,

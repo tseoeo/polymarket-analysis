@@ -17,9 +17,9 @@ export type AlertSeverity = 'critical' | 'high' | 'medium' | 'low' | 'info';
 
 export type AlertType =
   | 'volume_spike'
-  | 'spread_anomaly'
-  | 'market_maker_withdrawal'
-  | 'arbitrage_opportunity';
+  | 'spread_alert'
+  | 'mm_pullback'
+  | 'arbitrage';
 
 export interface AlertListResponse {
   alerts: Alert[];

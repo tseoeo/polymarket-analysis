@@ -28,9 +28,9 @@ const statusColors: Record<string, string> = {
 
 const typeColors: Record<string, string> = {
   volume_spike: 'bg-purple-50 text-purple-700 border-purple-200',
-  spread_anomaly: 'bg-indigo-50 text-indigo-700 border-indigo-200',
-  market_maker_withdrawal: 'bg-pink-50 text-pink-700 border-pink-200',
-  arbitrage_opportunity: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  spread_alert: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+  mm_pullback: 'bg-pink-50 text-pink-700 border-pink-200',
+  arbitrage: 'bg-emerald-50 text-emerald-700 border-emerald-200',
 };
 
 export function Badge({ children, variant = 'default', color, className }: BadgeProps) {

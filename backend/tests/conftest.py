@@ -38,7 +38,7 @@ async def test_engine():
     )
 
     # Import models to register with Base.metadata
-    from models import market, orderbook, trade, alert, job_run, relationship, volume_stats  # noqa: F401
+    from models import market, orderbook, trade, alert, job_run, relationship, volume_stats, watchlist  # noqa: F401
 
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)

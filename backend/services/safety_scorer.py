@@ -14,15 +14,28 @@ from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Any
 from dataclasses import dataclass
 
-from sqlalchemy import select, func
+from sqlalchemy import select, func, or_, cast, String
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.market import Market
 from models.orderbook import OrderBookSnapshot
 from models.trade import Trade
 from models.alert import Alert
+from models.trade import Trade
 
 logger = logging.getLogger(__name__)
+
+
+def _json_array_contains(column, value: str):
+    """Build a cross-dialect JSON array containment check.
+
+    PostgreSQL supports column.contains([value]) via the @> operator.
+    SQLite does not, so we fall back to a LIKE on the text representation.
+    The or_() with both approaches lets SQLAlchemy pick the one that works.
+    Since we always wrap this in or_() with a market_id == check, we use
+    cast-to-string + LIKE which works on both dialects.
+    """
+    return cast(column, String).like(f'%"{value}"%')
 
 
 @dataclass
@@ -46,6 +59,9 @@ class SafetyMetrics:
 
     # Volume
     volume_ratio: Optional[float] = None  # vs baseline
+
+    # Slippage
+    slippage_100_eur: Optional[float] = None  # slippage pct for 100 EUR trade
 
     # Signals
     active_signals: List[str] = None
@@ -241,6 +257,8 @@ class SafetyScorer:
                         "best_ask": score.metrics.best_ask,
                         "signal_count": score.metrics.signal_count,
                         "active_signals": score.metrics.active_signals,
+                        "volume_ratio": score.metrics.volume_ratio,
+                        "slippage_100_eur": score.metrics.slippage_100_eur,
                     },
                     "why_safe": score.why_safe,
                     "what_could_go_wrong": score.what_could_go_wrong,
@@ -317,10 +335,75 @@ class SafetyScorer:
         if latest_time:
             metrics.freshness_minutes = (now - latest_time).total_seconds() / 60
 
+        # Compute volume ratio (recent 1h vs baseline 24h)
+        if yes_token:
+            try:
+                one_hour_ago = now - timedelta(hours=1)
+                day_ago = now - timedelta(hours=24)
+
+                recent_vol_result = await session.execute(
+                    select(func.sum(Trade.size))
+                    .where(Trade.token_id == yes_token)
+                    .where(Trade.timestamp >= one_hour_ago)
+                )
+                recent_vol = float(recent_vol_result.scalar() or 0)
+
+                baseline_result = await session.execute(
+                    select(func.sum(Trade.size), func.count())
+                    .where(Trade.token_id == yes_token)
+                    .where(Trade.timestamp >= day_ago)
+                    .where(Trade.timestamp < one_hour_ago)
+                )
+                baseline_row = baseline_result.first()
+                baseline_vol = float(baseline_row[0] or 0)
+                baseline_count = baseline_row[1] or 0
+                baseline_hourly = baseline_vol / 23.0 if baseline_vol > 0 else 0
+
+                # Require at least 10 baseline trades to avoid false spikes on thin data
+                if baseline_hourly > 0 and baseline_count >= 10:
+                    metrics.volume_ratio = round(recent_vol / baseline_hourly, 2)
+            except Exception as e:
+                logger.debug(f"Volume ratio calc failed for {market.id}: {e}")
+
+            # Compute slippage for 100 EUR buy from already-loaded snapshot
+            if snapshot and snapshot.asks and metrics.best_ask:
+                try:
+                    trade_size = 100.0
+                    remaining = trade_size
+                    total_cost = 0.0
+                    total_shares = 0.0
+                    best_price = float(metrics.best_ask)
+
+                    for level in snapshot.asks:
+                        price = float(level.get("price", 0))
+                        size_shares = float(level.get("size", 0))
+                        if price <= 0 or size_shares <= 0:
+                            continue
+                        capacity = price * size_shares
+                        if capacity >= remaining:
+                            total_shares += remaining / price
+                            total_cost += remaining
+                            remaining = 0
+                            break
+                        total_cost += capacity
+                        total_shares += size_shares
+                        remaining -= capacity
+
+                    if total_shares > 0 and best_price > 0:
+                        avg_price = total_cost / total_shares
+                        slippage = abs(avg_price - best_price) / best_price
+                        metrics.slippage_100_eur = round(slippage, 4)
+                except Exception as e:
+                    logger.debug(f"Slippage calc failed for {market.id}: {e}")
+
         # Get active alerts for this market (signals)
+        # Check both market_id (single-market alerts) and related_market_ids (cross-market)
         alert_result = await session.execute(
             select(Alert.alert_type)
-            .where(Alert.related_market_ids.contains([market.id]))
+            .where(or_(
+                Alert.market_id == market.id,
+                _json_array_contains(Alert.related_market_ids, market.id),
+            ))
             .where(Alert.is_active == True)
         )
         alerts = alert_result.all()

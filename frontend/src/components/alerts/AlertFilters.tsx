@@ -8,9 +8,9 @@ interface FilterOption {
 const alertTypes: FilterOption[] = [
   { value: '', label: 'All Types' },
   { value: 'volume_spike', label: 'Volume Spike' },
-  { value: 'spread_anomaly', label: 'Spread Anomaly' },
-  { value: 'market_maker_withdrawal', label: 'MM Withdrawal' },
-  { value: 'arbitrage_opportunity', label: 'Arbitrage' },
+  { value: 'spread_alert', label: 'Spread Alert' },
+  { value: 'mm_pullback', label: 'MM Pullback' },
+  { value: 'arbitrage', label: 'Arbitrage' },
 ];
 
 const severities: FilterOption[] = [

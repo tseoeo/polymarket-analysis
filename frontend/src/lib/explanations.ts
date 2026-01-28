@@ -18,21 +18,21 @@ export const alertExplanations: Record<string, AlertExplanation> = {
     action: 'Check what news or events might be driving this. Consider whether the current price reflects the new information.',
     icon: '📈',
   },
-  spread_anomaly: {
+  spread_alert: {
     title: 'Wide Spread',
     whatItMeans: 'The gap between buy and sell prices is unusually large (over 5%).',
     opportunity: 'Wide spreads mean you can potentially buy low and sell high within the same market. Also indicates uncertainty or low liquidity.',
     action: 'If you have strong conviction about the outcome, the wide spread offers better entry prices.',
     icon: '↔️',
   },
-  market_maker_withdrawal: {
+  mm_pullback: {
     title: 'Liquidity Drop',
     whatItMeans: 'Market makers have pulled significant liquidity (50%+ depth reduction).',
     opportunity: 'MMs often withdraw before major price moves. This could signal upcoming volatility or insider knowledge.',
     action: 'Be cautious with large orders. Watch for news. This often precedes significant price changes.',
     icon: '🚰',
   },
-  arbitrage_opportunity: {
+  arbitrage: {
     title: 'Arbitrage',
     whatItMeans: 'Prices across related markets are misaligned, creating a risk-free profit opportunity.',
     opportunity: 'You can lock in guaranteed profit by taking opposing positions in mispriced markets.',
