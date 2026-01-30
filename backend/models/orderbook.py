@@ -2,7 +2,7 @@
 
 from datetime import datetime
 from typing import Optional
-from sqlalchemy import String, DateTime, Numeric, JSON, ForeignKey, Integer
+from sqlalchemy import String, DateTime, Numeric, JSON, ForeignKey, Integer, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from database import Base
@@ -28,12 +28,6 @@ class OrderBookSnapshot(Base):
     timestamp: Mapped[datetime] = mapped_column(
         DateTime, default=datetime.utcnow, index=True
     )
-
-    # Order book data (stored as JSON)
-    # bids: [{"price": 0.64, "size": 100.0}, ...]
-    # asks: [{"price": 0.66, "size": 150.0}, ...]
-    bids: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
-    asks: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
 
     # Calculated metrics
     best_bid: Mapped[Optional[float]] = mapped_column(Numeric(10, 4), nullable=True)
@@ -147,8 +141,6 @@ class OrderBookSnapshot(Base):
         return cls(
             token_id=token_id,
             market_id=market_id,
-            bids=bids,
-            asks=asks,
             best_bid=best_bid,
             best_ask=best_ask,
             spread=spread,
@@ -160,3 +152,27 @@ class OrderBookSnapshot(Base):
             ask_depth_5pct=ask_depth_5pct,
             imbalance=imbalance,
         )
+
+
+class OrderBookLatestRaw(Base):
+    """Latest raw order book per token (UPSERT, one row per token_id).
+
+    This table holds only the most recent bids/asks JSON for each token,
+    used exclusively by the slippage calculator. It stays tiny (~100 rows)
+    regardless of how long the system runs.
+    """
+
+    __tablename__ = "orderbook_latest_raw"
+
+    token_id: Mapped[str] = mapped_column(String(255), primary_key=True)
+    market_id: Mapped[Optional[str]] = mapped_column(
+        String(255),
+        ForeignKey("markets.id", ondelete="CASCADE"),
+        nullable=True,
+    )
+    timestamp: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    bids: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
+    asks: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
+
+    def __repr__(self) -> str:
+        return f"<OrderBookLatestRaw {self.token_id} @ {self.timestamp}>"

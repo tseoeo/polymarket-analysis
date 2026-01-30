@@ -251,8 +251,10 @@ async def cleanup_old_data_job():
         from sqlalchemy import text, update
         from models.alert import Alert
 
-        cutoff = datetime.utcnow() - timedelta(days=settings.data_retention_days)
         now = datetime.utcnow()
+        orderbook_cutoff = now - timedelta(days=settings.orderbook_retention_days)
+        trade_cutoff = now - timedelta(days=settings.data_retention_days)
+        alert_cutoff = now - timedelta(days=settings.alert_retention_days)
 
         async with async_session_maker() as session:
             # Expire alerts past their expires_at timestamp
@@ -264,21 +266,45 @@ async def cleanup_old_data_job():
             )
             expired_count = expire_result.rowcount
 
-            # Delete old order book snapshots
+            # Delete old order book snapshots (per-table retention)
             await session.execute(
                 text("DELETE FROM orderbook_snapshots WHERE timestamp < :cutoff"),
-                {"cutoff": cutoff},
+                {"cutoff": orderbook_cutoff},
             )
             # Delete old trades
             await session.execute(
                 text("DELETE FROM trades WHERE timestamp < :cutoff"),
-                {"cutoff": cutoff},
+                {"cutoff": trade_cutoff},
             )
-            # Delete old dismissed alerts
+            # Delete old dismissed alerts (shorter retention)
             await session.execute(
                 text("DELETE FROM alerts WHERE dismissed_at < :cutoff"),
-                {"cutoff": cutoff},
+                {"cutoff": alert_cutoff},
             )
+
+            # Row cap safety nets: delete oldest rows beyond the cap
+            for table, cap, ts_col in [
+                ("orderbook_snapshots", settings.max_orderbook_rows, "timestamp"),
+                ("trades", settings.max_trade_rows, "timestamp"),
+            ]:
+                count_result = await session.execute(
+                    text(f"SELECT COUNT(*) FROM {table}")
+                )
+                row_count = count_result.scalar()
+                if row_count and row_count > cap:
+                    excess = row_count - cap
+                    await session.execute(
+                        text(
+                            f"DELETE FROM {table} WHERE id IN "
+                            f"(SELECT id FROM {table} ORDER BY {ts_col} ASC LIMIT :excess)"
+                        ),
+                        {"excess": excess},
+                    )
+                    logger.warning(
+                        f"Row cap enforced: deleted {excess} oldest rows from {table} "
+                        f"(was {row_count}, cap {cap})"
+                    )
+
             await session.commit()
 
         # Run VACUUM (ANALYZE) outside a transaction to reclaim disk space
@@ -293,10 +319,35 @@ async def cleanup_old_data_job():
         except Exception as e:
             logger.warning(f"VACUUM after cleanup failed (non-fatal): {e}")
 
+        # Log table sizes for monitoring
+        try:
+            from database import engine
+            from sqlalchemy import text as sa_text
+
+            async with engine.connect() as conn:
+                result = await conn.execute(sa_text(
+                    "SELECT relname, pg_size_pretty(pg_total_relation_size(C.oid)), "
+                    "pg_total_relation_size(C.oid) as raw_bytes "
+                    "FROM pg_class C JOIN pg_namespace N ON N.oid = C.relnamespace "
+                    "WHERE nspname = 'public' AND relkind = 'r' "
+                    "ORDER BY pg_total_relation_size(C.oid) DESC"
+                ))
+                rows = result.fetchall()
+                total_bytes = sum(r[2] for r in rows)
+                sizes = ", ".join(f"{r[0]}={r[1]}" for r in rows[:5])
+                logger.info(
+                    f"Disk usage after cleanup: total={total_bytes / (1024*1024):.1f}MB "
+                    f"(top tables: {sizes})"
+                )
+        except Exception as e:
+            logger.warning(f"Disk usage logging failed (non-fatal): {e}")
+
         await update_job_records("cleanup_old_data", run_id, expired_count)
         logger.info(
             f"Cleanup complete: {expired_count} alerts expired, "
-            f"data older than {cutoff} removed"
+            f"orderbook>{settings.orderbook_retention_days}d, "
+            f"trades>{settings.data_retention_days}d, "
+            f"alerts>{settings.alert_retention_days}d removed"
         )
 
 

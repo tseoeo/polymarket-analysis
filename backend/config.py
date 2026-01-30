@@ -34,8 +34,14 @@ class Settings(BaseSettings):
     api_max_retries: int = 3
     api_retry_base_delay: float = 1.0  # Base delay in seconds
 
-    # Data retention
-    data_retention_days: int = 7
+    # Data retention (per-table)
+    data_retention_days: int = 7  # Default for trades
+    orderbook_retention_days: int = 7  # Orderbook snapshots (no JSON, so lightweight)
+    alert_retention_days: int = 3  # Dismissed alerts
+
+    # Row caps (safety nets to prevent runaway growth)
+    max_orderbook_rows: int = 300_000
+    max_trade_rows: int = 1_000_000
 
     # Logging
     log_level: str = "INFO"

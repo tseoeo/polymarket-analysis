@@ -15,7 +15,7 @@ from collections import defaultdict
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from models.orderbook import OrderBookSnapshot
+from models.orderbook import OrderBookSnapshot, OrderBookLatestRaw
 
 logger = logging.getLogger(__name__)
 
@@ -73,17 +73,25 @@ class OrderbookAnalyzer:
             - unfilled_dollars: Dollar amount that couldn't be filled
             - filled_dollars: Dollar amount successfully filled
         """
-        # Get latest snapshot
-        snapshot = await self._get_latest_snapshot(session, token_id)
-        if not snapshot:
+        # Get latest raw orderbook (from latest-only table)
+        raw = await session.get(OrderBookLatestRaw, token_id)
+        if not raw or not raw.bids or not raw.asks:
             return {
                 "error": "No recent orderbook data",
                 "token_id": token_id,
             }
 
         # Select the appropriate side of the book
-        levels = snapshot.asks if side == "buy" else snapshot.bids
-        best_price = snapshot.best_ask if side == "buy" else snapshot.best_bid
+        levels = raw.asks if side == "buy" else raw.bids
+        # Determine best price from the raw data
+        best_price = None
+        if levels:
+            try:
+                best_price = float(levels[0].get("price", 0))
+                if best_price <= 0:
+                    best_price = None
+            except (TypeError, ValueError, KeyError):
+                pass
 
         if not levels or not best_price:
             return {
@@ -150,7 +158,7 @@ class OrderbookAnalyzer:
             "expected_price": expected_price,
             "slippage_pct": abs(slippage_pct),
             "levels_consumed": levels_consumed,
-            "snapshot_age_seconds": (datetime.utcnow() - snapshot.timestamp).total_seconds(),
+            "snapshot_age_seconds": (datetime.utcnow() - raw.timestamp).total_seconds(),
         }
 
     async def analyze_spread_patterns(
@@ -322,14 +330,15 @@ class OrderbookAnalyzer:
                 "ask_depth": float(snapshot.ask_depth_5pct) if snapshot.ask_depth_5pct else 0,
             }
 
-        # Calculate depth at 10% level dynamically
-        if snapshot.bids and snapshot.best_bid:
+        # Calculate depth at 10% level from latest raw orderbook
+        raw = await session.get(OrderBookLatestRaw, token_id)
+        if raw and raw.bids and snapshot.best_bid:
             bid_depth_10pct = self._calculate_depth(
-                snapshot.bids, float(snapshot.best_bid), 0.10, is_bid=True
+                raw.bids, float(snapshot.best_bid), 0.10, is_bid=True
             )
             ask_depth_10pct = self._calculate_depth(
-                snapshot.asks, float(snapshot.best_ask), 0.10, is_bid=False
-            ) if snapshot.asks and snapshot.best_ask else 0
+                raw.asks, float(snapshot.best_ask), 0.10, is_bid=False
+            ) if raw.asks and snapshot.best_ask else 0
 
             result["depth"]["10%"] = {
                 "bid_depth": bid_depth_10pct,

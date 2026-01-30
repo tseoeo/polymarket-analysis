@@ -85,8 +85,6 @@ def create_test_snapshot(
         token_id=token_id,
         market_id=market_id,
         timestamp=timestamp,
-        bids=[{"price": best_bid, "size": bid_depth_1pct}],
-        asks=[{"price": best_ask, "size": ask_depth_1pct}],
         best_bid=best_bid,
         best_ask=best_ask,
         spread=spread,

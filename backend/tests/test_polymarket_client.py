@@ -165,12 +165,17 @@ async def test_collect_orderbooks_concurrency(test_session):
 
             from models.orderbook import OrderBookSnapshot
 
-            return OrderBookSnapshot(
+            snapshot = OrderBookSnapshot(
                 token_id=token_id,
                 market_id=market_id,
-                bids=[],
-                asks=[],
             )
+            raw_data = {
+                "token_id": token_id,
+                "market_id": market_id,
+                "bids": [],
+                "asks": [],
+            }
+            return (snapshot, raw_data)
 
     with patch.object(client, "_fetch_single_orderbook", side_effect=mock_fetch_orderbook):
         count = await client.collect_orderbooks(test_session)

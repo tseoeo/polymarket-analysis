@@ -153,9 +153,18 @@ async def test_orderbook_not_found(test_session):
 async def test_slippage_endpoint(test_session):
     """Test /api/orderbook/{token_id}/slippage endpoint."""
     from api.orderbook import calculate_slippage
-    from models.orderbook import OrderBookSnapshot
+    from models.orderbook import OrderBookSnapshot, OrderBookLatestRaw
 
     snapshot = OrderBookSnapshot(
+        token_id="slip-token",
+        market_id="slip-market",
+        timestamp=datetime.utcnow(),
+        best_bid=0.50,
+        best_ask=0.52,
+    )
+    test_session.add(snapshot)
+
+    raw = OrderBookLatestRaw(
         token_id="slip-token",
         market_id="slip-market",
         timestamp=datetime.utcnow(),
@@ -167,10 +176,8 @@ async def test_slippage_endpoint(test_session):
             {"price": "0.52", "size": "100"},
             {"price": "0.53", "size": "200"},
         ],
-        best_bid=0.50,
-        best_ask=0.52,
     )
-    test_session.add(snapshot)
+    test_session.add(raw)
     await test_session.commit()
 
     result = await calculate_slippage(

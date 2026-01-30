@@ -15,23 +15,24 @@ import pytest
 async def test_orderbook_slippage_calculation(test_session):
     """OrderbookAnalyzer should calculate slippage correctly."""
     from services.orderbook_analyzer import OrderbookAnalyzer
-    from models.orderbook import OrderBookSnapshot
+    from models.orderbook import OrderBookSnapshot, OrderBookLatestRaw
 
-    # Create a snapshot with orderbook data
+    bids = [
+        {"price": "0.50", "size": "100"},
+        {"price": "0.49", "size": "200"},
+        {"price": "0.48", "size": "300"},
+    ]
+    asks = [
+        {"price": "0.52", "size": "100"},
+        {"price": "0.53", "size": "200"},
+        {"price": "0.54", "size": "300"},
+    ]
+
+    # Create a snapshot with calculated metrics
     snapshot = OrderBookSnapshot(
         token_id="test-token",
         market_id="test-market",
         timestamp=datetime.utcnow(),
-        bids=[
-            {"price": "0.50", "size": "100"},
-            {"price": "0.49", "size": "200"},
-            {"price": "0.48", "size": "300"},
-        ],
-        asks=[
-            {"price": "0.52", "size": "100"},
-            {"price": "0.53", "size": "200"},
-            {"price": "0.54", "size": "300"},
-        ],
         best_bid=0.50,
         best_ask=0.52,
         spread=0.02,
@@ -39,6 +40,16 @@ async def test_orderbook_slippage_calculation(test_session):
         mid_price=0.51,
     )
     test_session.add(snapshot)
+
+    # Create latest raw orderbook for slippage calculation
+    raw = OrderBookLatestRaw(
+        token_id="test-token",
+        market_id="test-market",
+        timestamp=datetime.utcnow(),
+        bids=bids,
+        asks=asks,
+    )
+    test_session.add(raw)
     await test_session.commit()
 
     analyzer = OrderbookAnalyzer(snapshot_max_age_minutes=60)

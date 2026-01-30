@@ -1,7 +1,7 @@
 """Database models."""
 
 from .market import Market
-from .orderbook import OrderBookSnapshot
+from .orderbook import OrderBookSnapshot, OrderBookLatestRaw
 from .trade import Trade
 from .alert import Alert
 from .job_run import JobRun
@@ -12,6 +12,7 @@ from .watchlist import WatchlistItem
 __all__ = [
     "Market",
     "OrderBookSnapshot",
+    "OrderBookLatestRaw",
     "Trade",
     "Alert",
     "JobRun",

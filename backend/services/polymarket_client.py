@@ -445,16 +445,27 @@ class PolymarketClient:
         token_id: str,
         market_id: str,
         semaphore: asyncio.Semaphore,
-    ) -> Optional[OrderBookSnapshot]:
-        """Fetch a single orderbook with semaphore for rate limiting."""
+    ) -> Optional[tuple]:
+        """Fetch a single orderbook with semaphore for rate limiting.
+
+        Returns a tuple of (snapshot, raw_data_dict) where raw_data_dict
+        contains the bids/asks JSON for the latest-only table.
+        """
         async with semaphore:
             try:
                 book_data = await self.get_orderbook(token_id)
-                return OrderBookSnapshot.from_api_response(
+                snapshot = OrderBookSnapshot.from_api_response(
                     token_id=token_id,
                     market_id=market_id,
                     data=book_data,
                 )
+                raw_data = {
+                    "token_id": token_id,
+                    "market_id": market_id,
+                    "bids": book_data.get("bids", []),
+                    "asks": book_data.get("asks", []),
+                }
+                return (snapshot, raw_data)
             except Exception as e:
                 logger.warning(f"Failed to get orderbook for {token_id}: {e}")
                 return None
@@ -490,12 +501,31 @@ class PolymarketClient:
         ]
         snapshots = await asyncio.gather(*tasks)
 
-        # Add successful snapshots to session
+        # Add successful snapshots to session and UPSERT latest raw orderbooks
+        from models.orderbook import OrderBookLatestRaw
+        from datetime import datetime
+
         count = 0
-        for snapshot in snapshots:
-            if snapshot is not None:
+        for result in snapshots:
+            if result is not None:
+                snapshot, raw_data = result
                 session.add(snapshot)
                 count += 1
+
+                # UPSERT latest raw orderbook (one row per token_id)
+                existing = await session.get(OrderBookLatestRaw, raw_data["token_id"])
+                if existing:
+                    existing.market_id = raw_data["market_id"]
+                    existing.timestamp = datetime.utcnow()
+                    existing.bids = raw_data["bids"]
+                    existing.asks = raw_data["asks"]
+                else:
+                    session.add(OrderBookLatestRaw(
+                        token_id=raw_data["token_id"],
+                        market_id=raw_data["market_id"],
+                        bids=raw_data["bids"],
+                        asks=raw_data["asks"],
+                    ))
 
         logger.info(f"Collected {count} order book snapshots")
         return count

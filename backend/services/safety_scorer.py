@@ -18,7 +18,7 @@ from sqlalchemy import select, func, or_, cast, String
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.market import Market
-from models.orderbook import OrderBookSnapshot
+from models.orderbook import OrderBookSnapshot, OrderBookLatestRaw
 from models.trade import Trade
 from models.alert import Alert
 from models.trade import Trade
@@ -365,8 +365,15 @@ class SafetyScorer:
             except Exception as e:
                 logger.debug(f"Volume ratio calc failed for {market.id}: {e}")
 
-            # Compute slippage for 100 EUR buy from already-loaded snapshot
-            if snapshot and snapshot.asks and metrics.best_ask:
+            # Load latest raw orderbook for slippage calculation
+            raw_result = await session.execute(
+                select(OrderBookLatestRaw)
+                .where(OrderBookLatestRaw.token_id == yes_token)
+            )
+            raw_ob = raw_result.scalar_one_or_none()
+
+            # Compute slippage for 100 EUR buy from latest raw orderbook
+            if raw_ob and raw_ob.asks and metrics.best_ask:
                 try:
                     trade_size = 100.0
                     remaining = trade_size
@@ -374,7 +381,7 @@ class SafetyScorer:
                     total_shares = 0.0
                     best_price = float(metrics.best_ask)
 
-                    for level in snapshot.asks:
+                    for level in raw_ob.asks:
                         price = float(level.get("price", 0))
                         size_shares = float(level.get("size", 0))
                         if price <= 0 or size_shares <= 0:

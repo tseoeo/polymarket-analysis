@@ -188,7 +188,7 @@ async def test_gather_metrics_slippage(test_session):
     )
     test_session.add(market)
 
-    # Create orderbook snapshot with asks
+    # Create orderbook snapshot with calculated metrics
     snapshot = OrderBookSnapshot(
         token_id="tok4",
         market_id="m4",
@@ -202,10 +202,19 @@ async def test_gather_metrics_slippage(test_session):
         ask_depth_1pct=Decimal("500"),
         bid_depth_5pct=Decimal("2000"),
         ask_depth_5pct=Decimal("2000"),
+    )
+    test_session.add(snapshot)
+
+    # Create latest raw orderbook for slippage calculation
+    from models.orderbook import OrderBookLatestRaw
+    raw = OrderBookLatestRaw(
+        token_id="tok4",
+        market_id="m4",
+        timestamp=now - timedelta(minutes=5),
         bids=[{"price": "0.50", "size": "1000"}],
         asks=[{"price": "0.52", "size": "500"}, {"price": "0.55", "size": "500"}],
     )
-    test_session.add(snapshot)
+    test_session.add(raw)
     await test_session.commit()
 
     scorer = SafetyScorer()
