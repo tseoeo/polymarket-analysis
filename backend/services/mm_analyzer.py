@@ -90,6 +90,11 @@ class MarketMakerAnalyzer:
             if not oldest or not newest:
                 continue
 
+            # Skip if oldest and newest are the same snapshot or too close together
+            # (need at least 1 hour of history for meaningful comparison)
+            if oldest.id == newest.id or (newest.timestamp - oldest.timestamp).total_seconds() < 3600:
+                continue
+
             # Skip if newest snapshot is stale
             if newest.timestamp < cutoff:
                 logger.debug(
@@ -119,9 +124,9 @@ class MarketMakerAnalyzer:
                 market_id=market_id,
                 title=f"MM pullback: {drop_ratio:.0%} depth reduction",
                 data={
-                    "old_depth": float(old_depth),
-                    "new_depth": float(new_depth),
-                    "drop_pct": float(drop_ratio),
+                    "previous_depth": float(old_depth),
+                    "current_depth": float(new_depth),
+                    "depth_drop_pct": float(drop_ratio),
                     "token_id": token_id,
                     "lookback_hours": self.lookback.total_seconds() / 3600,
                     "oldest_snapshot_time": oldest.timestamp.isoformat(),

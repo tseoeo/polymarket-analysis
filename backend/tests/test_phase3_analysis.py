@@ -390,7 +390,7 @@ class TestMarketMakerAnalyzer:
 
         assert len(alerts) == 1
         assert alerts[0].alert_type == "mm_pullback"
-        assert alerts[0].data["drop_pct"] >= 0.5
+        assert alerts[0].data["depth_drop_pct"] >= 0.5
 
     @pytest.mark.asyncio
     async def test_ignores_small_drop(self, test_session):
