@@ -48,9 +48,9 @@ export function MarketsPage() {
   };
 
   const selectClass = cn(
-    'px-3 py-2 text-sm bg-white border border-gray-200 rounded-md',
-    'focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-1',
-    'text-gray-700'
+    'px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-md',
+    'focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-1 dark:focus:ring-offset-gray-900',
+    'text-gray-700 dark:text-gray-200'
   );
 
   const marketsWithAlerts = data?.markets.filter(m => m.active_alerts > 0).length || 0;
@@ -59,10 +59,10 @@ export function MarketsPage() {
     <div className="page-container">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-gray-900 mb-2">
+        <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-50 mb-2">
           Monitored Markets
         </h1>
-        <p className="text-gray-600 max-w-2xl">
+        <p className="text-gray-600 dark:text-gray-300 max-w-2xl">
           Browse prediction markets being analyzed. Markets with a bell icon have active opportunities.
           Click any market to see current prices and related alerts.
         </p>
@@ -105,7 +105,7 @@ export function MarketsPage() {
         </div>
 
         {data && (
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-gray-500 dark:text-gray-400">
             {data.total.toLocaleString()} markets
           </p>
         )}
@@ -113,11 +113,11 @@ export function MarketsPage() {
 
       {/* Understanding the cards */}
       {offset === 0 && !isLoading && data?.markets.length ? (
-        <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
-          <p className="text-sm font-medium text-gray-700 mb-2">Reading Market Cards:</p>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs text-gray-600">
-            <div><span className="font-medium text-green-600">Yes %</span> = Probability market resolves Yes</div>
-            <div><span className="font-medium text-red-600">No %</span> = Probability market resolves No</div>
+        <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+          <p className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">Reading Market Cards:</p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs text-gray-600 dark:text-gray-300">
+            <div><span className="font-medium text-green-600 dark:text-green-400">Yes %</span> = Probability market resolves Yes</div>
+            <div><span className="font-medium text-red-600 dark:text-red-400">No %</span> = Probability market resolves No</div>
             <div><span className="inline-flex items-center"><Bell className="w-3 h-3 mr-1 text-amber-500" />Number</span> = Active opportunities in this market</div>
           </div>
         </div>
@@ -134,7 +134,7 @@ export function MarketsPage() {
         />
       ) : !data?.markets.length ? (
         <EmptyState
-          icon={<BarChart3 className="w-6 h-6 text-gray-400" />}
+          icon={<BarChart3 className="w-6 h-6 text-gray-400 dark:text-gray-500" />}
           title="No markets found"
           description={hasAlerts === 'true'
             ? "No markets with active opportunities. Try removing the filter or check back later."

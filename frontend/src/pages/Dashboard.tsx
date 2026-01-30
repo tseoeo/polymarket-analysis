@@ -22,10 +22,10 @@ export function Dashboard() {
     <div className="page-container">
       {/* Welcome Section */}
       <div className="mb-8">
-        <h1 className="text-2xl font-semibold text-gray-900 mb-2">
+        <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-50 mb-2">
           Polymarket Opportunity Scanner
         </h1>
-        <p className="text-gray-600 max-w-2xl">
+        <p className="text-gray-600 dark:text-gray-300 max-w-2xl">
           This dashboard monitors prediction markets in real-time and alerts you to
           potential trading opportunities based on unusual market activity.
         </p>
@@ -34,22 +34,22 @@ export function Dashboard() {
       {/* Quick Guide */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <QuickGuideCard
-          icon={<TrendingUp className="w-5 h-5 text-purple-600" />}
+          icon={<TrendingUp className="w-5 h-5 text-purple-600 dark:text-purple-400" />}
           title="Volume Spikes"
           description="Sudden trading surges often signal informed traders acting on news"
         />
         <QuickGuideCard
-          icon={<Zap className="w-5 h-5 text-amber-600" />}
+          icon={<Zap className="w-5 h-5 text-amber-600 dark:text-amber-400" />}
           title="Wide Spreads"
           description="Large bid-ask gaps offer entry points and signal uncertainty"
         />
         <QuickGuideCard
-          icon={<Search className="w-5 h-5 text-pink-600" />}
+          icon={<Search className="w-5 h-5 text-pink-600 dark:text-pink-400" />}
           title="Liquidity Drops"
           description="When market makers exit, big moves often follow"
         />
         <QuickGuideCard
-          icon={<DollarSign className="w-5 h-5 text-emerald-600" />}
+          icon={<DollarSign className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />}
           title="Arbitrage"
           description="Price misalignments between related markets = risk-free profit"
         />
@@ -81,10 +81,10 @@ export function Dashboard() {
       {/* Recent Opportunities */}
       <section className="mb-8">
         <Card padding="none">
-          <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+          <div className="p-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
             <div>
               <CardTitle>Recent Opportunities</CardTitle>
-              <p className="text-sm text-gray-500 mt-1">
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                 Latest alerts from our analysis engine - each represents a potential edge
               </p>
             </div>
@@ -101,7 +101,7 @@ export function Dashboard() {
               <LoadingState message="Scanning for opportunities..." />
             ) : !alertsData?.alerts.length ? (
               <EmptyState
-                icon={<Bell className="w-6 h-6 text-gray-400" />}
+                icon={<Bell className="w-6 h-6 text-gray-400 dark:text-gray-500" />}
                 title="No active opportunities"
                 description="Markets are quiet. The scanner runs continuously and will surface opportunities as they appear."
               />
@@ -143,8 +143,8 @@ export function Dashboard() {
       {/* System Status */}
       <section>
         <div className="mb-4">
-          <h2 className="text-lg font-semibold text-gray-900">System Status</h2>
-          <p className="text-sm text-gray-500">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-50">System Status</h2>
+          <p className="text-sm text-gray-500 dark:text-gray-400">
             Data collection and analysis health - green means opportunities are being detected in real-time
           </p>
         </div>
@@ -163,10 +163,10 @@ interface QuickGuideCardProps {
 function QuickGuideCard({ icon, title, description }: QuickGuideCardProps) {
   return (
     <Card className="flex items-start gap-3">
-      <div className="p-2 bg-gray-100 rounded-lg">{icon}</div>
+      <div className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg">{icon}</div>
       <div>
-        <h3 className="font-medium text-gray-900 text-sm">{title}</h3>
-        <p className="text-xs text-gray-500 mt-0.5">{description}</p>
+        <h3 className="font-medium text-gray-900 dark:text-gray-50 text-sm">{title}</h3>
+        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{description}</p>
       </div>
     </Card>
   );
@@ -181,12 +181,12 @@ interface HowItWorksStepProps {
 function HowItWorksStep({ number, title, description }: HowItWorksStepProps) {
   return (
     <div className="flex gap-3">
-      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gray-900 text-white flex items-center justify-center text-sm font-medium">
+      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 flex items-center justify-center text-sm font-medium">
         {number}
       </div>
       <div>
-        <h3 className="font-medium text-gray-900">{title}</h3>
-        <p className="text-sm text-gray-500 mt-1">{description}</p>
+        <h3 className="font-medium text-gray-900 dark:text-gray-50">{title}</h3>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{description}</p>
       </div>
     </div>
   );

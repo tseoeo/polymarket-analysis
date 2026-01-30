@@ -46,9 +46,9 @@ export function AlertFilters({
   onIsActiveChange,
 }: AlertFiltersProps) {
   const selectClass = cn(
-    'px-3 py-2 text-sm bg-white border border-gray-200 rounded-md',
-    'focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-1',
-    'text-gray-700'
+    'px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-md',
+    'focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-1 dark:focus:ring-offset-gray-900',
+    'text-gray-700 dark:text-gray-200'
   );
 
   return (

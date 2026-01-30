@@ -25,24 +25,24 @@ export function VolumePage() {
     <div className="page-container">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-gray-900 mb-2">
+        <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-50 mb-2">
           Volume Analysis
         </h1>
-        <p className="text-gray-600 max-w-2xl">
+        <p className="text-gray-600 dark:text-gray-300 max-w-2xl">
           Monitor volume spikes, identify high-activity markets, and track volume trends.
           Unusual volume often precedes significant price movements.
         </p>
       </div>
 
       {/* Tabs */}
-      <div className="border-b border-gray-200 mb-6">
+      <div className="border-b border-gray-200 dark:border-gray-700 mb-6">
         <nav className="flex gap-4">
           <button
             onClick={() => setActiveTab('spikes')}
             className={`pb-3 px-1 text-sm font-medium border-b-2 transition-colors ${
               activeTab === 'spikes'
-                ? 'border-gray-900 text-gray-900'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
+                ? 'border-gray-900 dark:border-gray-100 text-gray-900 dark:text-gray-50'
+                : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
             }`}
           >
             Volume Spikes
@@ -51,8 +51,8 @@ export function VolumePage() {
             onClick={() => setActiveTab('leaders')}
             className={`pb-3 px-1 text-sm font-medium border-b-2 transition-colors ${
               activeTab === 'leaders'
-                ? 'border-gray-900 text-gray-900'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
+                ? 'border-gray-900 dark:border-gray-100 text-gray-900 dark:text-gray-50'
+                : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
             }`}
           >
             Volume Leaders
@@ -69,7 +69,7 @@ export function VolumePage() {
           )}
 
           {spikesError && (
-            <div className="text-red-600 py-4">Failed to load volume spikes</div>
+            <div className="text-red-600 dark:text-red-400 py-4">Failed to load volume spikes</div>
           )}
 
           {spikes && spikes.length === 0 && (
@@ -86,17 +86,17 @@ export function VolumePage() {
                   <div className="flex items-start justify-between mb-3">
                     <Badge color="yellow">Volume Spike</Badge>
                     <span className={`text-lg font-semibold ${
-                      spike.volume_ratio >= 5 ? 'text-red-600' :
-                      spike.volume_ratio >= 3 ? 'text-orange-600' :
-                      'text-yellow-600'
+                      spike.volume_ratio >= 5 ? 'text-red-600 dark:text-red-400' :
+                      spike.volume_ratio >= 3 ? 'text-orange-600 dark:text-orange-400' :
+                      'text-yellow-600 dark:text-yellow-400'
                     }`}>
                       {spike.volume_ratio.toFixed(1)}x
                     </span>
                   </div>
-                  <h3 className="font-medium text-gray-900 mb-2 text-sm">
+                  <h3 className="font-medium text-gray-900 dark:text-gray-50 mb-2 text-sm">
                     {spike.title}
                   </h3>
-                  <div className="space-y-1 text-sm text-gray-600">
+                  <div className="space-y-1 text-sm text-gray-600 dark:text-gray-300">
                     <div className="flex justify-between">
                       <span>Current Volume:</span>
                       <span className="font-mono">${spike.current_volume.toLocaleString()}</span>
@@ -106,14 +106,14 @@ export function VolumePage() {
                       <span className="font-mono">${spike.average_volume.toLocaleString()}</span>
                     </div>
                   </div>
-                  <div className="mt-3 pt-3 border-t border-gray-100 flex justify-between items-center">
+                  <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-800 flex justify-between items-center">
                     <Link
                       to={`/markets/${spike.market_id}`}
-                      className="text-xs text-blue-600 hover:underline"
+                      className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
                     >
                       View Market
                     </Link>
-                    <span className="text-xs text-gray-400">
+                    <span className="text-xs text-gray-400 dark:text-gray-500">
                       {new Date(spike.created_at).toLocaleDateString()}
                     </span>
                   </div>
@@ -133,7 +133,7 @@ export function VolumePage() {
           )}
 
           {leadersError && (
-            <div className="text-red-600 py-4">Failed to load volume leaders</div>
+            <div className="text-red-600 dark:text-red-400 py-4">Failed to load volume leaders</div>
           )}
 
           {leaders && leaders.length === 0 && (
@@ -147,7 +147,7 @@ export function VolumePage() {
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="text-left text-xs text-gray-500 uppercase border-b border-gray-200">
+                  <tr className="text-left text-xs text-gray-500 dark:text-gray-400 uppercase border-b border-gray-200 dark:border-gray-700">
                     <th className="pb-3 font-medium">Rank</th>
                     <th className="pb-3 font-medium">Market</th>
                     <th className="pb-3 font-medium text-right">24h Volume</th>
@@ -157,23 +157,23 @@ export function VolumePage() {
                 </thead>
                 <tbody>
                   {leaders.map((leader, i) => (
-                    <tr key={`${leader.market_id}-${leader.token_id}`} className="border-b border-gray-100">
-                      <td className="py-4 text-gray-500 font-medium">#{i + 1}</td>
+                    <tr key={`${leader.market_id}-${leader.token_id}`} className="border-b border-gray-100 dark:border-gray-800">
+                      <td className="py-4 text-gray-500 dark:text-gray-400 font-medium">#{i + 1}</td>
                       <td className="py-4">
                         <Link
                           to={`/markets/${leader.market_id}`}
-                          className="text-blue-600 hover:underline font-mono text-sm"
+                          className="text-blue-600 dark:text-blue-400 hover:underline font-mono text-sm"
                         >
                           {leader.market_id.slice(0, 16)}...
                         </Link>
                       </td>
-                      <td className="py-4 text-right font-mono">
+                      <td className="py-4 text-right font-mono text-gray-900 dark:text-gray-50">
                         ${leader.volume_24h.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                       </td>
-                      <td className="py-4 text-right font-mono">
+                      <td className="py-4 text-right font-mono text-gray-900 dark:text-gray-50">
                         {leader.trade_count_24h.toLocaleString()}
                       </td>
-                      <td className="py-4 text-right font-mono text-gray-600">
+                      <td className="py-4 text-right font-mono text-gray-600 dark:text-gray-300">
                         ${leader.avg_trade_size.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                       </td>
                     </tr>

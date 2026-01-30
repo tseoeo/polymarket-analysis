@@ -29,7 +29,7 @@ export function Pagination({
 
   return (
     <div className={cn('flex items-center justify-between', className)}>
-      <p className="text-sm text-gray-500">
+      <p className="text-sm text-gray-500 dark:text-gray-400">
         Showing <span className="font-medium">{startItem}</span> to{' '}
         <span className="font-medium">{endItem}</span> of{' '}
         <span className="font-medium">{total}</span> results
@@ -43,7 +43,7 @@ export function Pagination({
         >
           <ChevronLeft className="w-4 h-4" />
         </Button>
-        <span className="text-sm text-gray-600 min-w-[80px] text-center">
+        <span className="text-sm text-gray-600 dark:text-gray-300 min-w-[80px] text-center">
           Page {currentPage} of {totalPages}
         </span>
         <Button

@@ -34,14 +34,16 @@ export function OrderBookPage() {
     isLoading: loadingBestHours,
   } = useBestTradingHours(tokenId, 168, 5);
 
+  const inputClass = 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-400 focus:border-transparent';
+
   return (
     <div className="page-container">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-gray-900 mb-2">
+        <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-50 mb-2">
           Order Book Analysis
         </h1>
-        <p className="text-gray-600 max-w-2xl">
+        <p className="text-gray-600 dark:text-gray-300 max-w-2xl">
           Analyze order book depth, calculate slippage for trade sizes, and identify
           optimal trading hours based on spread patterns.
         </p>
@@ -49,7 +51,7 @@ export function OrderBookPage() {
 
       {/* Token Input */}
       <div className="mb-6">
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
           Token ID
         </label>
         <input
@@ -57,7 +59,7 @@ export function OrderBookPage() {
           value={tokenId}
           onChange={(e) => setTokenId(e.target.value)}
           placeholder="Enter token ID to analyze..."
-          className="w-full max-w-md px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+          className={`${inputClass} max-w-md`}
         />
       </div>
 
@@ -65,53 +67,53 @@ export function OrderBookPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Current Orderbook */}
           <Card className="p-4">
-            <h2 className="font-semibold text-gray-900 mb-4">Current Order Book</h2>
+            <h2 className="font-semibold text-gray-900 dark:text-gray-50 mb-4">Current Order Book</h2>
             {loadingOrderbook && <LoadingSpinner />}
             {orderbookError && (
-              <p className="text-red-600 text-sm">Failed to load orderbook</p>
+              <p className="text-red-600 dark:text-red-400 text-sm">Failed to load orderbook</p>
             )}
             {orderbook && (
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <p className="text-xs text-gray-500 uppercase">Best Bid</p>
-                    <p className="text-lg font-mono text-emerald-600">
+                    <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">Best Bid</p>
+                    <p className="text-lg font-mono text-emerald-600 dark:text-emerald-400">
                       ${orderbook.best_bid?.toFixed(4) || '-'}
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs text-gray-500 uppercase">Best Ask</p>
-                    <p className="text-lg font-mono text-red-600">
+                    <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">Best Ask</p>
+                    <p className="text-lg font-mono text-red-600 dark:text-red-400">
                       ${orderbook.best_ask?.toFixed(4) || '-'}
                     </p>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <p className="text-xs text-gray-500 uppercase">Spread</p>
-                    <p className="text-lg font-mono">
+                    <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">Spread</p>
+                    <p className="text-lg font-mono text-gray-900 dark:text-gray-50">
                       {orderbook.spread_pct ? (orderbook.spread_pct * 100).toFixed(2) : '-'}%
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs text-gray-500 uppercase">Imbalance</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">Imbalance</p>
                     <p className={`text-lg font-mono ${
-                      (orderbook.imbalance || 0) > 0 ? 'text-emerald-600' : 'text-red-600'
+                      (orderbook.imbalance || 0) > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'
                     }`}>
                       {orderbook.imbalance?.toFixed(3) || '-'}
                     </p>
                   </div>
                 </div>
                 {orderbook.depth && (
-                  <div className="pt-4 border-t border-gray-100">
-                    <p className="text-sm font-medium text-gray-700 mb-2">Depth</p>
+                  <div className="pt-4 border-t border-gray-100 dark:border-gray-800">
+                    <p className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">Depth</p>
                     {Object.entries(orderbook.depth).map(([level, data]) => (
                       <div key={level} className="flex justify-between text-sm py-1">
-                        <span className="text-gray-600">At {level}:</span>
+                        <span className="text-gray-600 dark:text-gray-300">At {level}:</span>
                         <span>
-                          <span className="text-emerald-600">${data.bid_depth.toFixed(0)}</span>
+                          <span className="text-emerald-600 dark:text-emerald-400">${data.bid_depth.toFixed(0)}</span>
                           {' / '}
-                          <span className="text-red-600">${data.ask_depth.toFixed(0)}</span>
+                          <span className="text-red-600 dark:text-red-400">${data.ask_depth.toFixed(0)}</span>
                         </span>
                       </div>
                     ))}
@@ -123,23 +125,23 @@ export function OrderBookPage() {
 
           {/* Slippage Calculator */}
           <Card className="p-4">
-            <h2 className="font-semibold text-gray-900 mb-4">Slippage Calculator</h2>
+            <h2 className="font-semibold text-gray-900 dark:text-gray-50 mb-4">Slippage Calculator</h2>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm text-gray-600 mb-1">Trade Size ($)</label>
+                <label className="block text-sm text-gray-600 dark:text-gray-300 mb-1">Trade Size ($)</label>
                 <input
                   type="number"
                   value={tradeSize}
                   onChange={(e) => setTradeSize(Number(e.target.value))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                  className={inputClass}
                 />
               </div>
               <div>
-                <label className="block text-sm text-gray-600 mb-1">Side</label>
+                <label className="block text-sm text-gray-600 dark:text-gray-300 mb-1">Side</label>
                 <select
                   value={tradeSide}
                   onChange={(e) => setTradeSide(e.target.value as 'buy' | 'sell')}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                  className={inputClass}
                 >
                   <option value="buy">Buy</option>
                   <option value="sell">Sell</option>
@@ -147,61 +149,61 @@ export function OrderBookPage() {
               </div>
               {loadingSlippage && <LoadingSpinner />}
               {slippage && !slippage.error && (
-                <div className="pt-4 border-t border-gray-100 space-y-2">
+                <div className="pt-4 border-t border-gray-100 dark:border-gray-800 space-y-2">
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Best Price:</span>
+                    <span className="text-gray-600 dark:text-gray-300">Best Price:</span>
                     <span className="font-mono">${slippage.best_price?.toFixed(4)}</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Expected Price:</span>
+                    <span className="text-gray-600 dark:text-gray-300">Expected Price:</span>
                     <span className="font-mono">${slippage.expected_price?.toFixed(4)}</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Slippage:</span>
+                    <span className="text-gray-600 dark:text-gray-300">Slippage:</span>
                     <span className={`font-mono ${
-                      (slippage.slippage_pct || 0) > 0.01 ? 'text-red-600' : 'text-gray-900'
+                      (slippage.slippage_pct || 0) > 0.01 ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-gray-50'
                     }`}>
                       {slippage.slippage_pct ? (slippage.slippage_pct * 100).toFixed(3) : 0}%
                     </span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Levels Consumed:</span>
+                    <span className="text-gray-600 dark:text-gray-300">Levels Consumed:</span>
                     <span className="font-mono">{slippage.levels_consumed}</span>
                   </div>
                 </div>
               )}
               {slippage?.error && (
-                <p className="text-sm text-red-600">{slippage.error}</p>
+                <p className="text-sm text-red-600 dark:text-red-400">{slippage.error}</p>
               )}
             </div>
           </Card>
 
           {/* Best Trading Hours */}
           <Card className="p-4">
-            <h2 className="font-semibold text-gray-900 mb-4">Best Trading Hours</h2>
+            <h2 className="font-semibold text-gray-900 dark:text-gray-50 mb-4">Best Trading Hours</h2>
             {loadingBestHours && <LoadingSpinner />}
             {bestHours && bestHours.length > 0 && (
               <div className="space-y-2">
                 {bestHours.map((hour, i) => (
                   <div
                     key={hour.hour}
-                    className="flex items-center justify-between p-2 bg-gray-50 rounded"
+                    className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 rounded"
                   >
                     <div className="flex items-center gap-3">
-                      <span className="text-xs font-medium text-gray-500">#{i + 1}</span>
-                      <span className="font-mono">
+                      <span className="text-xs font-medium text-gray-500 dark:text-gray-400">#{i + 1}</span>
+                      <span className="font-mono text-gray-900 dark:text-gray-50">
                         {String(hour.hour).padStart(2, '0')}:00 UTC
                       </span>
                     </div>
                     <div className="flex items-center gap-4 text-sm">
-                      <span className="text-gray-600">
+                      <span className="text-gray-600 dark:text-gray-300">
                         {(hour.avg_spread_pct * 100).toFixed(2)}% spread
                       </span>
                       <span className={`px-2 py-0.5 rounded text-xs font-medium ${
-                        hour.recommendation === 'excellent' ? 'bg-emerald-100 text-emerald-700' :
-                        hour.recommendation === 'good' ? 'bg-blue-100 text-blue-700' :
-                        hour.recommendation === 'fair' ? 'bg-yellow-100 text-yellow-700' :
-                        'bg-gray-100 text-gray-700'
+                        hour.recommendation === 'excellent' ? 'bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300' :
+                        hour.recommendation === 'good' ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300' :
+                        hour.recommendation === 'fair' ? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-300' :
+                        'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
                       }`}>
                         {hour.recommendation}
                       </span>
@@ -211,43 +213,43 @@ export function OrderBookPage() {
               </div>
             )}
             {bestHours && bestHours.length === 0 && (
-              <p className="text-sm text-gray-500">No data available</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">No data available</p>
             )}
           </Card>
 
           {/* Spread Patterns */}
           <Card className="p-4">
-            <h2 className="font-semibold text-gray-900 mb-4">Spread Patterns (24h)</h2>
+            <h2 className="font-semibold text-gray-900 dark:text-gray-50 mb-4">Spread Patterns (24h)</h2>
             {loadingPatterns && <LoadingSpinner />}
             {patterns && (
               <div className="space-y-3">
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
-                    <p className="text-gray-500">Best Hour</p>
-                    <p className="font-mono">
+                    <p className="text-gray-500 dark:text-gray-400">Best Hour</p>
+                    <p className="font-mono text-gray-900 dark:text-gray-50">
                       {String(patterns.best_hour).padStart(2, '0')}:00
-                      <span className="text-emerald-600 ml-2">
+                      <span className="text-emerald-600 dark:text-emerald-400 ml-2">
                         {(patterns.best_hour_spread * 100).toFixed(2)}%
                       </span>
                     </p>
                   </div>
                   <div>
-                    <p className="text-gray-500">Worst Hour</p>
-                    <p className="font-mono">
+                    <p className="text-gray-500 dark:text-gray-400">Worst Hour</p>
+                    <p className="font-mono text-gray-900 dark:text-gray-50">
                       {String(patterns.worst_hour).padStart(2, '0')}:00
-                      <span className="text-red-600 ml-2">
+                      <span className="text-red-600 dark:text-red-400 ml-2">
                         {(patterns.worst_hour_spread * 100).toFixed(2)}%
                       </span>
                     </p>
                   </div>
                 </div>
                 <div>
-                  <p className="text-gray-500 text-sm">Overall Average</p>
-                  <p className="font-mono">
+                  <p className="text-gray-500 dark:text-gray-400 text-sm">Overall Average</p>
+                  <p className="font-mono text-gray-900 dark:text-gray-50">
                     {(patterns.overall_avg_spread * 100).toFixed(2)}%
                   </p>
                 </div>
-                <p className="text-xs text-gray-400">
+                <p className="text-xs text-gray-400 dark:text-gray-500">
                   Based on {patterns.snapshot_count} snapshots
                 </p>
               </div>
@@ -257,7 +259,7 @@ export function OrderBookPage() {
       )}
 
       {!tokenId && (
-        <div className="text-center py-12 text-gray-500">
+        <div className="text-center py-12 text-gray-500 dark:text-gray-400">
           Enter a token ID above to analyze its order book
         </div>
       )}

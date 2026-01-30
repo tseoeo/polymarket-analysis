@@ -20,14 +20,14 @@ import { useState } from 'react';
 
 function SafetyScoreRing({ score, size = 'lg' }: { score: number; size?: 'sm' | 'lg' }) {
   const color = score >= 70 ? 'text-emerald-500' : score >= 50 ? 'text-amber-500' : 'text-red-500';
-  const bgColor = score >= 70 ? 'bg-emerald-50' : score >= 50 ? 'bg-amber-50' : 'bg-red-50';
+  const bgColor = score >= 70 ? 'bg-emerald-50 dark:bg-emerald-950' : score >= 50 ? 'bg-amber-50 dark:bg-amber-950' : 'bg-red-50 dark:bg-red-950';
   const dimensions = size === 'lg' ? 'w-24 h-24' : 'w-16 h-16';
   const textSize = size === 'lg' ? 'text-3xl' : 'text-xl';
 
   return (
     <div className={`${dimensions} ${bgColor} rounded-full flex flex-col items-center justify-center`}>
       <span className={`${textSize} font-bold ${color}`}>{score}</span>
-      <span className="text-xs text-gray-500">/ 100</span>
+      <span className="text-xs text-gray-500 dark:text-gray-400">/ 100</span>
     </div>
   );
 }
@@ -45,16 +45,16 @@ function ScoreBreakdown({ scores }: { scores: Scores }) {
       {items.map((item) => (
         <div key={item.label}>
           <div className="flex justify-between text-sm mb-1">
-            <span className="text-gray-600">{item.label}</span>
-            <span className="font-medium">{item.value}/{item.max}</span>
+            <span className="text-gray-600 dark:text-gray-300">{item.label}</span>
+            <span className="font-medium text-gray-900 dark:text-gray-50">{item.value}/{item.max}</span>
           </div>
-          <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+          <div className="h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
             <div
-              className="h-full bg-gray-800 rounded-full transition-all"
+              className="h-full bg-gray-800 dark:bg-gray-200 rounded-full transition-all"
               style={{ width: `${(item.value / item.max) * 100}%` }}
             />
           </div>
-          <p className="text-xs text-gray-400 mt-0.5">{item.description}</p>
+          <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{item.description}</p>
         </div>
       ))}
     </div>
@@ -65,49 +65,49 @@ function MetricsPanel({ metrics }: { metrics: Metrics }) {
   return (
     <div className="grid grid-cols-2 gap-4">
       <div>
-        <span className="text-sm text-gray-500">Spread</span>
-        <p className="font-medium">
+        <span className="text-sm text-gray-500 dark:text-gray-400">Spread</span>
+        <p className="font-medium text-gray-900 dark:text-gray-50">
           {metrics.spread_pct !== null ? `${(metrics.spread_pct * 100).toFixed(2)}%` : 'N/A'}
         </p>
       </div>
       <div>
-        <span className="text-sm text-gray-500">Total Depth</span>
-        <p className="font-medium">${metrics.total_depth.toFixed(0)}</p>
+        <span className="text-sm text-gray-500 dark:text-gray-400">Total Depth</span>
+        <p className="font-medium text-gray-900 dark:text-gray-50">${metrics.total_depth.toFixed(0)}</p>
       </div>
       <div>
-        <span className="text-sm text-gray-500">Bid Depth (1%)</span>
-        <p className="font-medium">${metrics.bid_depth_1pct.toFixed(0)}</p>
+        <span className="text-sm text-gray-500 dark:text-gray-400">Bid Depth (1%)</span>
+        <p className="font-medium text-gray-900 dark:text-gray-50">${metrics.bid_depth_1pct.toFixed(0)}</p>
       </div>
       <div>
-        <span className="text-sm text-gray-500">Ask Depth (1%)</span>
-        <p className="font-medium">${metrics.ask_depth_1pct.toFixed(0)}</p>
+        <span className="text-sm text-gray-500 dark:text-gray-400">Ask Depth (1%)</span>
+        <p className="font-medium text-gray-900 dark:text-gray-50">${metrics.ask_depth_1pct.toFixed(0)}</p>
       </div>
       <div>
-        <span className="text-sm text-gray-500">Best Bid</span>
-        <p className="font-medium">
+        <span className="text-sm text-gray-500 dark:text-gray-400">Best Bid</span>
+        <p className="font-medium text-gray-900 dark:text-gray-50">
           {metrics.best_bid !== null ? `$${metrics.best_bid.toFixed(3)}` : 'N/A'}
         </p>
       </div>
       <div>
-        <span className="text-sm text-gray-500">Best Ask</span>
-        <p className="font-medium">
+        <span className="text-sm text-gray-500 dark:text-gray-400">Best Ask</span>
+        <p className="font-medium text-gray-900 dark:text-gray-50">
           {metrics.best_ask !== null ? `$${metrics.best_ask.toFixed(3)}` : 'N/A'}
         </p>
       </div>
       <div className="col-span-2">
-        <span className="text-sm text-gray-500">Active Signals</span>
+        <span className="text-sm text-gray-500 dark:text-gray-400">Active Signals</span>
         <div className="flex gap-2 mt-1 flex-wrap">
           {metrics.active_signals.length > 0 ? (
             metrics.active_signals.map((signal) => (
               <span
                 key={signal}
-                className="inline-flex items-center px-2 py-0.5 text-xs font-medium rounded border bg-blue-50 text-blue-700 border-blue-200"
+                className="inline-flex items-center px-2 py-0.5 text-xs font-medium rounded border bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-400 dark:border-blue-800"
               >
                 {signal.replace(/_/g, ' ')}
               </span>
             ))
           ) : (
-            <span className="text-gray-400 text-sm">None</span>
+            <span className="text-gray-400 dark:text-gray-500 text-sm">None</span>
           )}
         </div>
       </div>
@@ -130,7 +130,7 @@ function ChecklistItem({ item, onToggle }: { item: ChecklistItemType; onToggle?:
     confirmed ? (
       <CheckCircle className="w-5 h-5 text-emerald-500" />
     ) : (
-      <AlertCircle className="w-5 h-5 text-gray-400" />
+      <AlertCircle className="w-5 h-5 text-gray-400 dark:text-gray-500" />
     )
   ) : item.passed ? (
     <CheckCircle className="w-5 h-5 text-emerald-500" />
@@ -143,20 +143,20 @@ function ChecklistItem({ item, onToggle }: { item: ChecklistItemType; onToggle?:
       onClick={handleClick}
       className={`flex items-start gap-3 p-3 rounded-lg border transition-colors ${
         isUserConfirm
-          ? 'cursor-pointer hover:bg-gray-50 border-dashed'
+          ? 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 border-dashed'
           : ''
       } ${
         isUserConfirm && confirmed
-          ? 'bg-emerald-50 border-emerald-200'
-          : 'border-gray-200'
+          ? 'bg-emerald-50 border-emerald-200 dark:bg-emerald-950 dark:border-emerald-800'
+          : 'border-gray-200 dark:border-gray-700'
       }`}
     >
       {icon}
       <div className="flex-1">
-        <p className={`font-medium ${isUserConfirm && !confirmed ? 'text-gray-500' : 'text-gray-900'}`}>
+        <p className={`font-medium ${isUserConfirm && !confirmed ? 'text-gray-500 dark:text-gray-400' : 'text-gray-900 dark:text-gray-50'}`}>
           {item.label}
         </p>
-        <p className="text-sm text-gray-500">{item.detail}</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400">{item.detail}</p>
       </div>
     </div>
   );
@@ -189,10 +189,10 @@ export function OpportunityDetailPage() {
   if (error || !data) {
     return (
       <div className="page-container">
-        <div className="text-red-600 py-4">
+        <div className="text-red-600 dark:text-red-400 py-4">
           Failed to load opportunity details.
         </div>
-        <Link to="/briefing" className="text-blue-600 hover:underline">
+        <Link to="/briefing" className="text-blue-600 dark:text-blue-400 hover:underline">
           Back to Daily Briefing
         </Link>
       </div>
@@ -204,7 +204,7 @@ export function OpportunityDetailPage() {
       {/* Back Link */}
       <Link
         to="/briefing"
-        className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 mb-6"
+        className="inline-flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 mb-6"
       >
         <ArrowLeft className="w-4 h-4" />
         Back to Daily Briefing
@@ -219,13 +219,13 @@ export function OpportunityDetailPage() {
               <Badge color="gray">{data.category}</Badge>
             )}
             {data.last_updated && (
-              <span className="text-xs text-gray-400 flex items-center gap-1">
+              <span className="text-xs text-gray-400 dark:text-gray-500 flex items-center gap-1">
                 <Clock className="w-3 h-3" />
                 Updated {new Date(data.last_updated).toLocaleTimeString()}
               </span>
             )}
           </div>
-          <h1 className="text-2xl font-semibold text-gray-900 mb-4">
+          <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-50 mb-4">
             {data.market_question}
           </h1>
           <div className="flex gap-3">
@@ -250,7 +250,7 @@ export function OpportunityDetailPage() {
               href={`https://polymarket.com/event/${data.market_id}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center justify-center px-3 py-2 text-sm font-medium rounded border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 transition-colors"
+              className="inline-flex items-center justify-center px-3 py-2 text-sm font-medium rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
             >
               Open on Polymarket
               <ExternalLink className="w-4 h-4 ml-2" />
@@ -265,25 +265,25 @@ export function OpportunityDetailPage() {
           {/* Teach Me Panel */}
           <Card className="p-6">
             <div className="flex items-center gap-2 mb-4">
-              <BookOpen className="w-5 h-5 text-blue-600" />
-              <h2 className="text-lg font-semibold text-gray-900">Teach Me</h2>
+              <BookOpen className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-50">Teach Me</h2>
             </div>
             <div className="space-y-4">
               <div>
-                <h3 className="font-medium text-gray-700 mb-1">What this signal means</h3>
-                <p className="text-gray-600">{data.teach_me.what_signal_means}</p>
+                <h3 className="font-medium text-gray-700 dark:text-gray-200 mb-1">What this signal means</h3>
+                <p className="text-gray-600 dark:text-gray-300">{data.teach_me.what_signal_means}</p>
               </div>
               <div>
-                <h3 className="font-medium text-gray-700 mb-1">Why it can be safe</h3>
-                <p className="text-gray-600">{data.teach_me.why_safe}</p>
+                <h3 className="font-medium text-gray-700 dark:text-gray-200 mb-1">Why it can be safe</h3>
+                <p className="text-gray-600 dark:text-gray-300">{data.teach_me.why_safe}</p>
               </div>
               <div>
-                <h3 className="font-medium text-gray-700 mb-1">What would invalidate it</h3>
-                <p className="text-gray-600">{data.teach_me.what_invalidates}</p>
+                <h3 className="font-medium text-gray-700 dark:text-gray-200 mb-1">What would invalidate it</h3>
+                <p className="text-gray-600 dark:text-gray-300">{data.teach_me.what_invalidates}</p>
               </div>
-              <div className="bg-amber-50 p-4 rounded-lg border border-amber-100">
-                <h3 className="font-medium text-amber-800 mb-1">Risk with 100 EUR</h3>
-                <p className="text-amber-700">{data.teach_me.risk_with_100_eur}</p>
+              <div className="bg-amber-50 dark:bg-amber-950 p-4 rounded-lg border border-amber-100 dark:border-amber-800">
+                <h3 className="font-medium text-amber-800 dark:text-amber-300 mb-1">Risk with 100 EUR</h3>
+                <p className="text-amber-700 dark:text-amber-400">{data.teach_me.risk_with_100_eur}</p>
               </div>
             </div>
           </Card>
@@ -291,10 +291,10 @@ export function OpportunityDetailPage() {
           {/* Go/No-Go Checklist */}
           <Card className="p-6">
             <div className="flex items-center gap-2 mb-4">
-              <Shield className="w-5 h-5 text-emerald-600" />
-              <h2 className="text-lg font-semibold text-gray-900">Go / No-Go Checklist</h2>
+              <Shield className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-50">Go / No-Go Checklist</h2>
             </div>
-            <p className="text-sm text-gray-500 mb-4">
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
               All items should be checked before considering a trade.
             </p>
             <div className="space-y-3">
@@ -309,27 +309,27 @@ export function OpportunityDetailPage() {
         <div className="space-y-6">
           {/* Score Breakdown */}
           <Card className="p-5">
-            <h3 className="font-semibold text-gray-900 mb-4">Score Breakdown</h3>
+            <h3 className="font-semibold text-gray-900 dark:text-gray-50 mb-4">Score Breakdown</h3>
             <ScoreBreakdown scores={data.scores} />
           </Card>
 
           {/* Raw Metrics */}
           <Card className="p-5">
-            <h3 className="font-semibold text-gray-900 mb-4">Raw Metrics</h3>
+            <h3 className="font-semibold text-gray-900 dark:text-gray-50 mb-4">Raw Metrics</h3>
             <MetricsPanel metrics={data.metrics} />
           </Card>
 
           {/* Why Safe / Risk */}
           <Card className="p-5">
-            <h3 className="font-semibold text-gray-900 mb-4">Summary</h3>
+            <h3 className="font-semibold text-gray-900 dark:text-gray-50 mb-4">Summary</h3>
             <div className="space-y-4">
               <div>
-                <p className="text-sm font-medium text-emerald-700 mb-1">Why Safe</p>
-                <p className="text-sm text-gray-600">{data.why_safe}</p>
+                <p className="text-sm font-medium text-emerald-700 dark:text-emerald-400 mb-1">Why Safe</p>
+                <p className="text-sm text-gray-600 dark:text-gray-300">{data.why_safe}</p>
               </div>
               <div>
-                <p className="text-sm font-medium text-amber-700 mb-1">What Could Go Wrong</p>
-                <p className="text-sm text-gray-600">{data.what_could_go_wrong}</p>
+                <p className="text-sm font-medium text-amber-700 dark:text-amber-400 mb-1">What Could Go Wrong</p>
+                <p className="text-sm text-gray-600 dark:text-gray-300">{data.what_could_go_wrong}</p>
               </div>
             </div>
           </Card>

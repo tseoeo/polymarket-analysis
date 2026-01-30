@@ -17,11 +17,11 @@ export function Tooltip({ content, children, className }: TooltipProps) {
       onMouseEnter={() => setIsVisible(true)}
       onMouseLeave={() => setIsVisible(false)}
     >
-      {children || <HelpCircle className="w-4 h-4 text-gray-400 cursor-help" />}
+      {children || <HelpCircle className="w-4 h-4 text-gray-400 dark:text-gray-500 cursor-help" />}
       {isVisible && (
-        <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 text-xs text-white bg-gray-900 rounded-lg shadow-lg whitespace-nowrap z-50 max-w-xs text-center">
+        <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 text-xs text-white bg-gray-900 dark:bg-gray-100 dark:text-gray-900 rounded-lg shadow-lg whitespace-nowrap z-50 max-w-xs text-center">
           {content}
-          <span className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900" />
+          <span className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900 dark:border-t-gray-100" />
         </span>
       )}
     </span>
@@ -36,9 +36,9 @@ interface InfoBoxProps {
 }
 
 const variantStyles = {
-  info: 'bg-blue-50 border-blue-200 text-blue-800',
-  tip: 'bg-green-50 border-green-200 text-green-800',
-  warning: 'bg-amber-50 border-amber-200 text-amber-800',
+  info: 'bg-blue-50 border-blue-200 text-blue-800 dark:bg-blue-950 dark:border-blue-800 dark:text-blue-300',
+  tip: 'bg-green-50 border-green-200 text-green-800 dark:bg-green-950 dark:border-green-800 dark:text-green-300',
+  warning: 'bg-amber-50 border-amber-200 text-amber-800 dark:bg-amber-950 dark:border-amber-800 dark:text-amber-300',
 };
 
 export function InfoBox({ title, children, variant = 'info', className }: InfoBoxProps) {

@@ -22,7 +22,7 @@ export function MarketCard({ market }: MarketCardProps) {
               <Badge>Closed</Badge>
             )}
             {market.active_alerts > 0 && (
-              <span className="inline-flex items-center gap-1 text-xs text-amber-600">
+              <span className="inline-flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400">
                 <Bell className="w-3.5 h-3.5" />
                 {market.active_alerts}
               </span>
@@ -30,7 +30,7 @@ export function MarketCard({ market }: MarketCardProps) {
           </div>
         </div>
 
-        <h4 className="font-medium text-gray-900 mb-3 line-clamp-2">
+        <h4 className="font-medium text-gray-900 dark:text-gray-50 mb-3 line-clamp-2">
           {market.question}
         </h4>
 
@@ -40,7 +40,7 @@ export function MarketCard({ market }: MarketCardProps) {
           size="sm"
         />
 
-        <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-100 text-xs text-gray-500">
+        <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-100 dark:border-gray-800 text-xs text-gray-500 dark:text-gray-400">
           <span>Vol: {formatCurrency(market.volume)}</span>
           {market.end_date && (
             <span>Ends {formatRelativeTime(market.end_date)}</span>

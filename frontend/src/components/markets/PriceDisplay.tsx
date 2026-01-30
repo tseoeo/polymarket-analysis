@@ -21,12 +21,12 @@ export function PriceDisplay({ yesPrice, noPrice, size = 'md' }: PriceDisplayPro
   return (
     <div className={cn('flex items-center gap-4', sizeStyles[size])}>
       <div className="flex items-center gap-1.5">
-        <span className="text-gray-500">Yes</span>
-        <span className="text-green-600 font-medium">{formatPrice(yesPrice)}</span>
+        <span className="text-gray-500 dark:text-gray-400">Yes</span>
+        <span className="text-green-600 dark:text-green-400 font-medium">{formatPrice(yesPrice)}</span>
       </div>
       <div className="flex items-center gap-1.5">
-        <span className="text-gray-500">No</span>
-        <span className="text-red-600 font-medium">{formatPrice(noPrice)}</span>
+        <span className="text-gray-500 dark:text-gray-400">No</span>
+        <span className="text-red-600 dark:text-red-400 font-medium">{formatPrice(noPrice)}</span>
       </div>
     </div>
   );

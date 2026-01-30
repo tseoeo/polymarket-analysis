@@ -20,7 +20,7 @@ export function SystemStatus() {
   if (error || !status) {
     return (
       <Card>
-        <div className="flex items-center gap-3 text-gray-500">
+        <div className="flex items-center gap-3 text-gray-500 dark:text-gray-400">
           <AlertCircle className="w-5 h-5" />
           <span className="text-sm">Unable to load system status</span>
         </div>
@@ -36,10 +36,10 @@ export function SystemStatus() {
           <div className="flex items-center gap-3">
             <StatusDot status={status.status} pulse={status.status === 'degraded'} />
             <div>
-              <h3 className="font-medium text-gray-900 capitalize">
+              <h3 className="font-medium text-gray-900 dark:text-gray-50 capitalize">
                 System {status.status}
               </h3>
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-gray-500 dark:text-gray-400">
                 Last updated {formatRelativeTime(status.timestamp)}
               </p>
             </div>
@@ -48,22 +48,22 @@ export function SystemStatus() {
           {status.counts && (
             <div className="flex gap-6 text-sm">
               <div className="text-center">
-                <p className="font-semibold text-gray-900">
+                <p className="font-semibold text-gray-900 dark:text-gray-50">
                   {formatNumber(status.counts.markets_active)}
                 </p>
-                <p className="text-gray-500">Markets</p>
+                <p className="text-gray-500 dark:text-gray-400">Markets</p>
               </div>
               <div className="text-center">
-                <p className="font-semibold text-gray-900">
+                <p className="font-semibold text-gray-900 dark:text-gray-50">
                   {formatNumber(status.counts.alerts_active)}
                 </p>
-                <p className="text-gray-500">Alerts</p>
+                <p className="text-gray-500 dark:text-gray-400">Alerts</p>
               </div>
               <div className="text-center">
-                <p className="font-semibold text-gray-900">
+                <p className="font-semibold text-gray-900 dark:text-gray-50">
                   {formatNumber(status.counts.trades_24h)}
                 </p>
-                <p className="text-gray-500">Trades (24h)</p>
+                <p className="text-gray-500 dark:text-gray-400">Trades (24h)</p>
               </div>
             </div>
           )}
@@ -97,13 +97,13 @@ export function SystemStatus() {
 
       {/* Job Status */}
       <Card padding="none">
-        <div className="p-4 border-b border-gray-100">
+        <div className="p-4 border-b border-gray-100 dark:border-gray-800">
           <CardTitle>Background Jobs</CardTitle>
-          <p className="text-sm text-gray-500 mt-1">
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
             Scheduler is {status.scheduler.enabled ? 'enabled' : 'disabled'}
           </p>
         </div>
-        <div className="divide-y divide-gray-100">
+        <div className="divide-y divide-gray-100 dark:divide-gray-800">
           {status.scheduler.jobs.map((job) => (
             <div key={job.id} className="p-3">
               <JobStatusCard job={job} />
@@ -123,8 +123,8 @@ interface FreshnessItemProps {
 function FreshnessItem({ label, value }: FreshnessItemProps) {
   return (
     <div>
-      <p className="text-sm text-gray-500">{label}</p>
-      <p className="text-sm font-medium text-gray-900">
+      <p className="text-sm text-gray-500 dark:text-gray-400">{label}</p>
+      <p className="text-sm font-medium text-gray-900 dark:text-gray-50">
         {value ? formatRelativeTime(value) : 'Never'}
       </p>
     </div>

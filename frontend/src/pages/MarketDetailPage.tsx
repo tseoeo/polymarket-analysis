@@ -28,7 +28,7 @@ export function MarketDetailPage() {
     return (
       <div className="page-container">
         <EmptyState
-          icon={<BarChart3 className="w-6 h-6 text-gray-400" />}
+          icon={<BarChart3 className="w-6 h-6 text-gray-400 dark:text-gray-500" />}
           title="Market not found"
           description="The market you're looking for doesn't exist or has been removed."
         />
@@ -41,7 +41,7 @@ export function MarketDetailPage() {
       {/* Back button */}
       <Link
         to="/markets"
-        className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-4"
+        className="inline-flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 mb-4"
       >
         <ArrowLeft className="w-4 h-4" />
         Back to Markets
@@ -62,7 +62,7 @@ export function MarketDetailPage() {
             </Badge>
           )}
         </div>
-        <h1 className="text-2xl font-semibold text-gray-900">{market.question}</h1>
+        <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-50">{market.question}</h1>
       </div>
 
       {/* Content */}
@@ -87,7 +87,7 @@ export function MarketDetailPage() {
               <CardHeader>
                 <CardTitle>Description</CardTitle>
               </CardHeader>
-              <p className="text-gray-700 whitespace-pre-wrap">
+              <p className="text-gray-700 dark:text-gray-200 whitespace-pre-wrap">
                 {market.description}
               </p>
             </Card>
@@ -95,7 +95,7 @@ export function MarketDetailPage() {
 
           {/* Alerts */}
           <Card padding="none">
-            <div className="p-4 border-b border-gray-100">
+            <div className="p-4 border-b border-gray-100 dark:border-gray-800">
               <CardTitle>Market Alerts</CardTitle>
             </div>
             <div className="p-4">
@@ -103,7 +103,7 @@ export function MarketDetailPage() {
                 <LoadingState message="Loading alerts..." />
               ) : !alerts?.length ? (
                 <EmptyState
-                  icon={<Bell className="w-6 h-6 text-gray-400" />}
+                  icon={<Bell className="w-6 h-6 text-gray-400 dark:text-gray-500" />}
                   title="No active alerts"
                   description="This market has no active alerts."
                 />
@@ -145,7 +145,7 @@ export function MarketDetailPage() {
                 {market.outcomes.map((outcome, index) => (
                   <li
                     key={index}
-                    className="text-sm text-gray-700 px-2 py-1 bg-gray-50 rounded"
+                    className="text-sm text-gray-700 dark:text-gray-200 px-2 py-1 bg-gray-50 dark:bg-gray-800 rounded"
                   >
                     {outcome}
                   </li>
@@ -158,14 +158,14 @@ export function MarketDetailPage() {
             <CardHeader>
               <CardTitle>Market ID</CardTitle>
             </CardHeader>
-            <p className="text-xs text-gray-500 font-mono break-all">
+            <p className="text-xs text-gray-500 dark:text-gray-400 font-mono break-all">
               {market.id}
             </p>
             <a
               href={`https://polymarket.com/event/${market.id}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700 mt-3"
+              className="inline-flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 mt-3"
             >
               View on Polymarket
               <ExternalLink className="w-3.5 h-3.5" />
@@ -185,8 +185,8 @@ interface StatItemProps {
 function StatItem({ label, value }: StatItemProps) {
   return (
     <div>
-      <dt className="text-xs text-gray-500">{label}</dt>
-      <dd className="text-sm font-medium text-gray-900 mt-0.5">{value}</dd>
+      <dt className="text-xs text-gray-500 dark:text-gray-400">{label}</dt>
+      <dd className="text-sm font-medium text-gray-900 dark:text-gray-50 mt-0.5">{value}</dd>
     </div>
   );
 }

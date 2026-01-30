@@ -6,8 +6,20 @@
     <title>Polymarket Analyzer</title>
     <meta name="description" content="Analysis dashboard for Polymarket trading opportunities" />
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📊</text></svg>" />
-    <script type="module" crossorigin src="/assets/index-oSNtLn0i.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-DizLi4jV.css">
+    <script>
+      (function() {
+        var theme = localStorage.getItem('theme');
+        var isDark = theme === 'dark' || (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        if (isDark) {
+          document.documentElement.classList.add('dark');
+          document.documentElement.style.colorScheme = 'dark';
+        } else {
+          document.documentElement.style.colorScheme = 'light';
+        }
+      })();
+    </script>
+    <script type="module" crossorigin src="/assets/index-DnHz91nl.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-82uEEY2o.css">
   </head>
   <body>
     <div id="root"></div>

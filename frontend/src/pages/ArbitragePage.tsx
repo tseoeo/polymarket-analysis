@@ -35,24 +35,24 @@ export function ArbitragePage() {
     <div className="page-container">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-gray-900 mb-2">
+        <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-50 mb-2">
           Cross-Market Arbitrage
         </h1>
-        <p className="text-gray-600 max-w-2xl">
+        <p className="text-gray-600 dark:text-gray-300 max-w-2xl">
           Detect pricing anomalies across related markets. Cross-market arbitrage opportunities
           arise when markets with logical relationships are mispriced relative to each other.
         </p>
       </div>
 
       {/* Tabs */}
-      <div className="border-b border-gray-200 mb-6">
+      <div className="border-b border-gray-200 dark:border-gray-700 mb-6">
         <nav className="flex gap-4">
           <button
             onClick={() => setActiveTab('opportunities')}
             className={`pb-3 px-1 text-sm font-medium border-b-2 transition-colors ${
               activeTab === 'opportunities'
-                ? 'border-gray-900 text-gray-900'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
+                ? 'border-gray-900 dark:border-gray-100 text-gray-900 dark:text-gray-50'
+                : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
             }`}
           >
             Opportunities
@@ -61,8 +61,8 @@ export function ArbitragePage() {
             onClick={() => setActiveTab('groups')}
             className={`pb-3 px-1 text-sm font-medium border-b-2 transition-colors ${
               activeTab === 'groups'
-                ? 'border-gray-900 text-gray-900'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
+                ? 'border-gray-900 dark:border-gray-100 text-gray-900 dark:text-gray-50'
+                : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
             }`}
           >
             Relationship Groups
@@ -78,8 +78,8 @@ export function ArbitragePage() {
               onClick={() => setTypeFilter('')}
               className={`px-3 py-1 text-sm rounded-full border transition-colors ${
                 !typeFilter
-                  ? 'bg-gray-900 text-white border-gray-900'
-                  : 'bg-white text-gray-600 border-gray-300 hover:border-gray-400'
+                  ? 'bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 border-gray-900 dark:border-gray-100'
+                  : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
               }`}
             >
               All Types
@@ -90,8 +90,8 @@ export function ArbitragePage() {
                 onClick={() => setTypeFilter(type)}
                 className={`px-3 py-1 text-sm rounded-full border transition-colors ${
                   typeFilter === type
-                    ? 'bg-gray-900 text-white border-gray-900'
-                    : 'bg-white text-gray-600 border-gray-300 hover:border-gray-400'
+                    ? 'bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 border-gray-900 dark:border-gray-100'
+                    : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
                 }`}
               >
                 {label}
@@ -107,7 +107,7 @@ export function ArbitragePage() {
           )}
 
           {errorOpps && (
-            <div className="text-red-600 py-4">
+            <div className="text-red-600 dark:text-red-400 py-4">
               Failed to load opportunities
             </div>
           )}
@@ -128,27 +128,27 @@ export function ArbitragePage() {
                     <div className="flex items-start justify-between mb-3">
                       <Badge color={typeInfo.color as any}>{typeInfo.label}</Badge>
                       {opp.profit_estimate && (
-                        <span className="text-lg font-semibold text-emerald-600">
+                        <span className="text-lg font-semibold text-emerald-600 dark:text-emerald-400">
                           +{(opp.profit_estimate * 100).toFixed(1)}%
                         </span>
                       )}
                     </div>
-                    <h3 className="font-medium text-gray-900 mb-2">{opp.title}</h3>
+                    <h3 className="font-medium text-gray-900 dark:text-gray-50 mb-2">{opp.title}</h3>
                     {opp.description && (
-                      <p className="text-sm text-gray-600 mb-3">{opp.description}</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-300 mb-3">{opp.description}</p>
                     )}
                     {opp.strategy && (
-                      <p className="text-xs text-gray-500">
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
                         <span className="font-medium">Strategy:</span> {opp.strategy.replace(/_/g, ' ')}
                       </p>
                     )}
                     {opp.market_ids && opp.market_ids.length > 0 && (
-                      <div className="mt-3 pt-3 border-t border-gray-100 flex gap-2 flex-wrap">
+                      <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-800 flex gap-2 flex-wrap">
                         {opp.market_ids.map((id) => (
                           <Link
                             key={id}
                             to={`/markets/${id}`}
-                            className="text-xs text-blue-600 hover:underline"
+                            className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
                           >
                             {id.slice(0, 12)}...
                           </Link>
@@ -186,23 +186,23 @@ export function ArbitragePage() {
                   <Card key={group.group_id} className="p-4">
                     <div className="flex items-center gap-3 mb-2">
                       <Badge color={typeInfo.color as any}>{typeInfo.label}</Badge>
-                      <span className="text-sm text-gray-500">
+                      <span className="text-sm text-gray-500 dark:text-gray-400">
                         {group.market_ids.length} markets
                       </span>
-                      <span className="text-xs text-gray-400">
+                      <span className="text-xs text-gray-400 dark:text-gray-500">
                         Confidence: {(group.confidence * 100).toFixed(0)}%
                       </span>
                     </div>
-                    <h3 className="font-medium text-gray-900 mb-2">{group.group_id}</h3>
+                    <h3 className="font-medium text-gray-900 dark:text-gray-50 mb-2">{group.group_id}</h3>
                     {group.notes && (
-                      <p className="text-sm text-gray-600 mb-3">{group.notes}</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-300 mb-3">{group.notes}</p>
                     )}
                     <div className="flex gap-2 flex-wrap">
                       {group.market_ids.map((id) => (
                         <Link
                           key={id}
                           to={`/markets/${id}`}
-                          className="text-xs px-2 py-1 bg-gray-100 rounded text-gray-600 hover:bg-gray-200"
+                          className="text-xs px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
                         >
                           {id.slice(0, 16)}...
                         </Link>

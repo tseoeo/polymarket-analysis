@@ -35,7 +35,7 @@ export function AlertDetailPage() {
     return (
       <div className="page-container">
         <EmptyState
-          icon={<Bell className="w-6 h-6 text-gray-400" />}
+          icon={<Bell className="w-6 h-6 text-gray-400 dark:text-gray-500" />}
           title="Opportunity not found"
           description="This alert may have expired or been removed."
           action={
@@ -54,7 +54,7 @@ export function AlertDetailPage() {
       {/* Back button */}
       <Link
         to="/alerts"
-        className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-4"
+        className="inline-flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 mb-4"
       >
         <ArrowLeft className="w-4 h-4" />
         Back to Opportunities
@@ -74,8 +74,8 @@ export function AlertDetailPage() {
               </Badge>
             )}
           </div>
-          <h1 className="text-2xl font-semibold text-gray-900">{alert.title}</h1>
-          <p className="text-sm text-gray-500 mt-1">
+          <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-50">{alert.title}</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
             Detected {formatRelativeTime(alert.created_at)} · {severityExplanation}
           </p>
         </div>
@@ -104,7 +104,7 @@ export function AlertDetailPage() {
                 What This Means
               </CardTitle>
             </CardHeader>
-            <p className="text-gray-700">
+            <p className="text-gray-700 dark:text-gray-200">
               {explanation.whatItMeans}
             </p>
           </Card>
@@ -123,7 +123,7 @@ export function AlertDetailPage() {
                 Suggested Action
               </CardTitle>
             </CardHeader>
-            <p className="text-gray-700">
+            <p className="text-gray-700 dark:text-gray-200">
               {explanation.action}
             </p>
           </Card>
@@ -134,7 +134,7 @@ export function AlertDetailPage() {
               <CardHeader>
                 <CardTitle>Details</CardTitle>
               </CardHeader>
-              <p className="text-gray-700 whitespace-pre-wrap">
+              <p className="text-gray-700 dark:text-gray-200 whitespace-pre-wrap">
                 {alert.description}
               </p>
             </Card>
@@ -146,11 +146,11 @@ export function AlertDetailPage() {
               <CardHeader>
                 <CardTitle>Technical Data</CardTitle>
               </CardHeader>
-              <p className="text-sm text-gray-500 mb-3">
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
                 Raw data from our analysis - useful for advanced traders
               </p>
-              <div className="bg-gray-50 rounded-md p-4 overflow-x-auto">
-                <pre className="text-sm text-gray-700">
+              <div className="bg-gray-50 dark:bg-gray-800 rounded-md p-4 overflow-x-auto">
+                <pre className="text-sm text-gray-700 dark:text-gray-200">
                   {JSON.stringify(alert.data, null, 2)}
                 </pre>
               </div>
@@ -190,17 +190,17 @@ export function AlertDetailPage() {
               <CardHeader>
                 <CardTitle>Related Market</CardTitle>
               </CardHeader>
-              <p className="text-sm text-gray-600 mb-3">
+              <p className="text-sm text-gray-600 dark:text-gray-300 mb-3">
                 This opportunity was detected in the following market:
               </p>
               <Link
                 to={`/markets/${alert.market_id}`}
-                className="inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700 font-medium"
+                className="inline-flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium"
               >
                 View Market Details
                 <ExternalLink className="w-3.5 h-3.5" />
               </Link>
-              <p className="text-xs text-gray-400 mt-2 font-mono break-all">
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-2 font-mono break-all">
                 ID: {alert.market_id}
               </p>
             </Card>
@@ -212,7 +212,7 @@ export function AlertDetailPage() {
               <CardHeader>
                 <CardTitle>Markets Involved</CardTitle>
               </CardHeader>
-              <p className="text-sm text-gray-600 mb-3">
+              <p className="text-sm text-gray-600 dark:text-gray-300 mb-3">
                 This arbitrage opportunity spans multiple markets:
               </p>
               <ul className="space-y-2">
@@ -220,11 +220,11 @@ export function AlertDetailPage() {
                   <li key={marketId}>
                     <Link
                       to={`/markets/${marketId}`}
-                      className="text-sm text-blue-600 hover:text-blue-700"
+                      className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
                     >
                       Market {index + 1}
                     </Link>
-                    <p className="text-xs text-gray-400 font-mono truncate">
+                    <p className="text-xs text-gray-400 dark:text-gray-500 font-mono truncate">
                       {marketId}
                     </p>
                   </li>
@@ -234,8 +234,8 @@ export function AlertDetailPage() {
           )}
 
           {/* Disclaimer */}
-          <Card className="bg-gray-50 border-gray-200">
-            <p className="text-xs text-gray-500">
+          <Card className="bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+            <p className="text-xs text-gray-500 dark:text-gray-400">
               <strong>Disclaimer:</strong> This is not financial advice.
               Alerts are generated algorithmically and may contain false positives.
               Always do your own research before trading.
@@ -255,8 +255,8 @@ interface InfoItemProps {
 function InfoItem({ label, value }: InfoItemProps) {
   return (
     <div>
-      <dt className="text-xs text-gray-500">{label}</dt>
-      <dd className="text-sm text-gray-900 mt-0.5">{value}</dd>
+      <dt className="text-xs text-gray-500 dark:text-gray-400">{label}</dt>
+      <dd className="text-sm text-gray-900 dark:text-gray-50 mt-0.5">{value}</dd>
     </div>
   );
 }

@@ -27,10 +27,10 @@ export function JobStatusCard({ job }: JobStatusCardProps) {
             pulse={status === 'running'}
           />
           <div>
-            <h4 className="text-sm font-medium text-gray-900">
+            <h4 className="text-sm font-medium text-gray-900 dark:text-gray-50">
               {formatJobName(job.id)}
             </h4>
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-gray-500 dark:text-gray-400">
               {job.last_run ? formatRelativeTime(job.last_run) : 'Never run'}
             </p>
           </div>
@@ -38,7 +38,7 @@ export function JobStatusCard({ job }: JobStatusCardProps) {
 
         <div className="flex items-center gap-3">
           {job.records_processed !== null && (
-            <span className="text-xs text-gray-500">
+            <span className="text-xs text-gray-500 dark:text-gray-400">
               {formatNumber(job.records_processed)} processed
             </span>
           )}
@@ -47,7 +47,7 @@ export function JobStatusCard({ job }: JobStatusCardProps) {
       </div>
 
       {job.error_message && (
-        <p className="mt-2 text-xs text-red-600 bg-red-50 rounded px-2 py-1">
+        <p className="mt-2 text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950 rounded px-2 py-1">
           {job.error_message}
         </p>
       )}

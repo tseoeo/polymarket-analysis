@@ -37,10 +37,10 @@ export function AlertsPage() {
     <div className="page-container">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-gray-900 mb-2">
+        <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-50 mb-2">
           Trading Opportunities
         </h1>
-        <p className="text-gray-600 max-w-2xl">
+        <p className="text-gray-600 dark:text-gray-300 max-w-2xl">
           Each alert below represents a detected market anomaly that may indicate a trading opportunity.
           Click any card to see detailed analysis and suggested actions.
         </p>
@@ -57,7 +57,7 @@ export function AlertsPage() {
           onIsActiveChange={(v) => handleFilterChange(setIsActive, v)}
         />
         {data && (
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-gray-500 dark:text-gray-400">
             {data.total} {data.total === 1 ? 'opportunity' : 'opportunities'} found
           </p>
         )}
@@ -68,7 +68,7 @@ export function AlertsPage() {
         <InfoBox variant="info" className="mb-6">
           <p className="font-medium">{selectedTypeExplanation.icon} {selectedTypeExplanation.title}</p>
           <p className="mt-1">{selectedTypeExplanation.whatItMeans}</p>
-          <p className="mt-2 text-emerald-700">
+          <p className="mt-2 text-emerald-700 dark:text-emerald-400">
             <strong>Opportunity:</strong> {selectedTypeExplanation.opportunity}
           </p>
         </InfoBox>
@@ -76,13 +76,13 @@ export function AlertsPage() {
 
       {/* Legend for new users */}
       {!type && !severity && isActive === 'true' && offset === 0 && (
-        <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
-          <p className="text-sm font-medium text-gray-700 mb-2">Understanding Alert Types:</p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs text-gray-600">
-            <div><span className="font-medium">📈 Volume Spike:</span> Unusual trading activity</div>
-            <div><span className="font-medium">↔️ Wide Spread:</span> Large bid-ask gap</div>
-            <div><span className="font-medium">🚰 Liquidity Drop:</span> Market makers exiting</div>
-            <div><span className="font-medium">💰 Arbitrage:</span> Risk-free profit opportunity</div>
+        <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+          <p className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">Understanding Alert Types:</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs text-gray-600 dark:text-gray-300">
+            <div><span className="font-medium">Volume Spike:</span> Unusual trading activity</div>
+            <div><span className="font-medium">Wide Spread:</span> Large bid-ask gap</div>
+            <div><span className="font-medium">Liquidity Drop:</span> Market makers exiting</div>
+            <div><span className="font-medium">Arbitrage:</span> Risk-free profit opportunity</div>
           </div>
         </div>
       )}
