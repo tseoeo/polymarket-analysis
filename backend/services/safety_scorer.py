@@ -206,107 +206,198 @@ class SafetyScorer:
             passes_alignment=passes_alignment,
         )
 
-    async def _get_candidate_markets(
+    async def _get_opportunities_batch(
         self,
         session: AsyncSession,
         max_freshness: int,
+        min_depth: float,
+        max_spread: float,
         min_signals: int,
+        limit: int,
         exclude_ids: Optional[set] = None,
-    ) -> List[Market]:
-        """Get candidate markets pre-filtered by freshness and signal count in SQL.
+    ) -> List[Dict[str, Any]]:
+        """Get scored opportunities using bulk SQL queries (no N+1).
 
-        This avoids the N+1 query problem by pushing the two most selective
-        filters (alert count and orderbook freshness) into SQL, reducing
-        thousands of markets to typically <50 candidates.
+        Runs ~4 batch queries to gather all metrics at once, then scores
+        and filters in Python. This handles thousands of markets in
+        constant time regardless of scale.
         """
         now = datetime.utcnow()
         freshness_cutoff = now - timedelta(minutes=max_freshness)
 
-        # Subquery: markets with at least min_signals distinct active alert types
-        markets_with_signals = (
-            select(Alert.market_id)
+        # ── Query 1: Candidate market IDs with signal counts ──
+        # Markets with at least min_signals distinct active alert types.
+        # We fetch (market_id, alert_type) pairs and aggregate in Python
+        # to avoid dialect-specific string_agg/group_concat differences.
+        signal_query = (
+            select(Alert.market_id, Alert.alert_type)
             .where(Alert.is_active == True)
             .where(Alert.market_id.isnot(None))
-            .group_by(Alert.market_id)
-            .having(func.count(func.distinct(Alert.alert_type)) >= min_signals)
-        ).subquery()
-
-        # Subquery: markets with a recent orderbook snapshot
-        fresh_orderbooks = (
-            select(OrderBookSnapshot.market_id)
-            .where(OrderBookSnapshot.timestamp >= freshness_cutoff)
-            .group_by(OrderBookSnapshot.market_id)
-        ).subquery()
-
-        query = (
-            select(Market)
-            .join(markets_with_signals, Market.id == markets_with_signals.c.market_id)
-            .join(fresh_orderbooks, Market.id == fresh_orderbooks.c.market_id)
-            .where(Market.active == True)
+            .distinct()
         )
+        signal_result = await session.execute(signal_query)
+        signal_rows = signal_result.all()
 
-        if exclude_ids:
-            query = query.where(Market.id.notin_(exclude_ids))
+        if not signal_rows:
+            return []
 
-        result = await session.execute(query)
-        return result.scalars().all()
+        # Build signal lookup: market_id -> set of alert types
+        from collections import defaultdict
+        raw_signals: Dict[str, set] = defaultdict(set)
+        for mid, atype in signal_rows:
+            raw_signals[mid].add(atype)
 
-    def _score_to_dict(self, market: Market, score: SafetyScore) -> Dict[str, Any]:
-        """Convert a market + score into an opportunity dict."""
-        return {
-            "market_id": market.id,
-            "market_question": market.question,
-            "category": market.category,
-            "outcomes": market.outcomes,
-            "safety_score": score.total,
-            "scores": {
-                "freshness": score.freshness_score,
-                "liquidity": score.liquidity_score,
-                "spread": score.spread_score,
-                "alignment": score.alignment_score,
-            },
-            "metrics": {
-                "freshness_minutes": score.metrics.freshness_minutes,
-                "spread_pct": score.metrics.spread_pct,
-                "total_depth": score.metrics.total_depth,
-                "bid_depth_1pct": score.metrics.bid_depth_1pct,
-                "ask_depth_1pct": score.metrics.ask_depth_1pct,
-                "best_bid": score.metrics.best_bid,
-                "best_ask": score.metrics.best_ask,
-                "signal_count": score.metrics.signal_count,
-                "active_signals": score.metrics.active_signals,
-                "volume_ratio": score.metrics.volume_ratio,
-                "slippage_100_eur": score.metrics.slippage_100_eur,
-            },
-            "why_safe": score.why_safe,
-            "what_could_go_wrong": score.what_could_go_wrong,
-            "last_updated": score.metrics.last_orderbook_time.isoformat()
-                if score.metrics.last_orderbook_time else None,
-        }
-
-    async def _score_and_filter(
-        self,
-        session: AsyncSession,
-        markets: List[Market],
-        check_safe: bool,
-        limit: int,
-    ) -> List[Dict[str, Any]]:
-        """Score markets and filter by safety thresholds.
-
-        Args:
-            check_safe: If True, only include markets passing is_safe.
-                        If False, include all scored markets.
-        """
-        opportunities = []
-        for market in markets:
-            try:
-                score = await self.calculate_score(session, market)
-                if check_safe and not score.is_safe:
-                    continue
-                opportunities.append(self._score_to_dict(market, score))
-            except Exception as e:
-                logger.warning(f"Error scoring market {market.id}: {e}")
+        signal_map = {}
+        candidate_ids = set()
+        for mid, types in raw_signals.items():
+            if len(types) < min_signals:
                 continue
+            if exclude_ids and mid in exclude_ids:
+                continue
+            signal_map[mid] = {
+                "count": len(types),
+                "types": list(types),
+            }
+            candidate_ids.add(mid)
+
+        if not candidate_ids:
+            return []
+
+        # ── Query 2: Latest orderbook snapshot per market (with metrics) ──
+        ob_sub = (
+            select(
+                OrderBookSnapshot.market_id,
+                OrderBookSnapshot.token_id,
+                OrderBookSnapshot.timestamp,
+                OrderBookSnapshot.best_bid,
+                OrderBookSnapshot.best_ask,
+                OrderBookSnapshot.spread_pct,
+                OrderBookSnapshot.bid_depth_1pct,
+                OrderBookSnapshot.ask_depth_1pct,
+                func.row_number().over(
+                    partition_by=OrderBookSnapshot.market_id,
+                    order_by=OrderBookSnapshot.timestamp.desc(),
+                ).label("rn"),
+            )
+            .where(OrderBookSnapshot.market_id.in_(candidate_ids))
+            .where(OrderBookSnapshot.timestamp >= freshness_cutoff)
+        ).subquery()
+
+        ob_result = await session.execute(
+            select(
+                ob_sub.c.market_id,
+                ob_sub.c.token_id,
+                ob_sub.c.timestamp,
+                ob_sub.c.best_bid,
+                ob_sub.c.best_ask,
+                ob_sub.c.spread_pct,
+                ob_sub.c.bid_depth_1pct,
+                ob_sub.c.ask_depth_1pct,
+            ).where(ob_sub.c.rn == 1)
+        )
+        ob_rows = ob_result.all()
+
+        # Build orderbook lookup
+        ob_map = {}
+        for row in ob_rows:
+            mid, token_id, ts, best_bid, best_ask, sp_pct, bd_1, ad_1 = row
+            bid_depth = float(bd_1 or 0)
+            ask_depth = float(ad_1 or 0)
+            total_depth = bid_depth + ask_depth
+            spread_pct = float(sp_pct) if sp_pct else None
+
+            # Apply depth + spread filters early
+            if total_depth < min_depth:
+                continue
+            if spread_pct is not None and spread_pct > max_spread:
+                continue
+
+            freshness_minutes = (now - ts).total_seconds() / 60
+
+            ob_map[mid] = {
+                "token_id": token_id,
+                "timestamp": ts,
+                "best_bid": float(best_bid) if best_bid else None,
+                "best_ask": float(best_ask) if best_ask else None,
+                "spread_pct": spread_pct,
+                "bid_depth_1pct": bid_depth,
+                "ask_depth_1pct": ask_depth,
+                "total_depth": total_depth,
+                "freshness_minutes": freshness_minutes,
+            }
+
+        # Only keep markets that pass orderbook filters
+        valid_ids = candidate_ids & set(ob_map.keys())
+        if not valid_ids:
+            return []
+
+        # ── Query 3: Markets data ──
+        market_result = await session.execute(
+            select(Market).where(Market.id.in_(valid_ids)).where(Market.active == True)
+        )
+        markets = {m.id: m for m in market_result.scalars().all()}
+
+        # ── Score in Python (no more DB queries) ──
+        opportunities = []
+        for mid in valid_ids:
+            market = markets.get(mid)
+            if not market:
+                continue
+
+            ob = ob_map[mid]
+            sig = signal_map[mid]
+
+            metrics = SafetyMetrics(
+                last_orderbook_time=ob["timestamp"],
+                freshness_minutes=ob["freshness_minutes"],
+                bid_depth_1pct=ob["bid_depth_1pct"],
+                ask_depth_1pct=ob["ask_depth_1pct"],
+                total_depth=ob["total_depth"],
+                spread_pct=ob["spread_pct"],
+                best_bid=ob["best_bid"],
+                best_ask=ob["best_ask"],
+                active_signals=sig["types"],
+                signal_count=sig["count"],
+            )
+
+            freshness_score = self._score_freshness(metrics.freshness_minutes)
+            liquidity_score = self._score_liquidity(metrics.total_depth)
+            spread_score = self._score_spread(metrics.spread_pct)
+            alignment_score = self._score_alignment(metrics.signal_count)
+            total = freshness_score + liquidity_score + spread_score + alignment_score
+
+            why_safe = self._explain_why_safe(metrics, total)
+            what_could_go_wrong = self._explain_risks(metrics)
+
+            opportunities.append({
+                "market_id": mid,
+                "market_question": market.question,
+                "category": market.category,
+                "outcomes": market.outcomes,
+                "safety_score": total,
+                "scores": {
+                    "freshness": freshness_score,
+                    "liquidity": liquidity_score,
+                    "spread": spread_score,
+                    "alignment": alignment_score,
+                },
+                "metrics": {
+                    "freshness_minutes": metrics.freshness_minutes,
+                    "spread_pct": metrics.spread_pct,
+                    "total_depth": metrics.total_depth,
+                    "bid_depth_1pct": metrics.bid_depth_1pct,
+                    "ask_depth_1pct": metrics.ask_depth_1pct,
+                    "best_bid": metrics.best_bid,
+                    "best_ask": metrics.best_ask,
+                    "signal_count": metrics.signal_count,
+                    "active_signals": metrics.active_signals,
+                    "volume_ratio": None,
+                    "slippage_100_eur": None,
+                },
+                "why_safe": why_safe,
+                "what_could_go_wrong": what_could_go_wrong,
+                "last_updated": ob["timestamp"].isoformat(),
+            })
 
         opportunities.sort(key=lambda x: x["safety_score"], reverse=True)
         return opportunities[:limit]
@@ -316,17 +407,15 @@ class SafetyScorer:
         session: AsyncSession,
         limit: int = 5,
     ) -> List[Dict[str, Any]]:
-        """Get top safe opportunities for daily briefing.
-
-        Pre-filters markets in SQL by alert count and orderbook freshness
-        to avoid scoring thousands of irrelevant markets.
-        """
-        markets = await self._get_candidate_markets(
+        """Get top safe opportunities using batch queries."""
+        return await self._get_opportunities_batch(
             session,
             max_freshness=self.max_freshness,
+            min_depth=self.min_depth,
+            max_spread=self.max_spread,
             min_signals=self.min_signals,
+            limit=limit,
         )
-        return await self._score_and_filter(session, markets, check_safe=True, limit=limit)
 
     async def get_learning_opportunities(
         self,
@@ -334,26 +423,15 @@ class SafetyScorer:
         limit: int = 5,
         exclude_ids: Optional[set] = None,
     ) -> List[Dict[str, Any]]:
-        """Get learning pick opportunities with relaxed thresholds.
-
-        Only called when safe opportunities < limit. Uses wider freshness
-        and lower signal requirements to find educational candidates.
-        """
-        learning_scorer = SafetyScorer(
-            max_freshness_minutes=self.LEARNING_MAX_FRESHNESS,
+        """Get learning picks with relaxed thresholds using batch queries."""
+        return await self._get_opportunities_batch(
+            session,
+            max_freshness=self.LEARNING_MAX_FRESHNESS,
             min_depth=self.LEARNING_MIN_DEPTH,
             max_spread=self.LEARNING_MAX_SPREAD,
             min_signals=self.LEARNING_MIN_SIGNALS,
-        )
-
-        markets = await self._get_candidate_markets(
-            session,
-            max_freshness=self.LEARNING_MAX_FRESHNESS,
-            min_signals=self.LEARNING_MIN_SIGNALS,
+            limit=limit,
             exclude_ids=exclude_ids,
-        )
-        return await learning_scorer._score_and_filter(
-            session, markets, check_safe=True, limit=limit,
         )
 
     async def _gather_metrics(
