@@ -23,6 +23,26 @@ export interface Scores {
   alignment: number;
 }
 
+export interface ProfitPerEur {
+  conservative: number | null;
+  optimistic: number | null;
+  note: string;
+}
+
+export interface BestTimeToAct {
+  status: 'act_now' | 'watch' | 'wait';
+  reason: string;
+}
+
+export interface Explanation {
+  opportunity: string;
+  action: string;
+  profit_per_eur: ProfitPerEur;
+  profit_math: string;
+  risks: string[];
+  best_time_to_act: BestTimeToAct;
+}
+
 export interface Opportunity {
   market_id: string;
   market_question: string;
@@ -31,6 +51,7 @@ export interface Opportunity {
   safety_score: number;
   scores: Scores;
   metrics: Metrics;
+  explanation: Explanation | null;
   why_safe: string;
   what_could_go_wrong: string;
   last_updated: string | null;

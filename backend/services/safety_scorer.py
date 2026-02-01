@@ -337,7 +337,42 @@ class SafetyScorer:
         )
         markets = {m.id: m for m in market_result.scalars().all()}
 
+        # ── Query 4: Recent price moves for valid markets ──
+        # Get first and last trade price in last hour per token for price move calc
+        token_to_market = {}
+        for mid in valid_ids:
+            market = markets.get(mid)
+            if market and market.outcomes:
+                for outcome in market.outcomes:
+                    if outcome.get("name", "").lower() == "yes":
+                        token_to_market[outcome.get("token_id")] = mid
+                        break
+                else:
+                    tid = market.outcomes[0].get("token_id")
+                    if tid:
+                        token_to_market[tid] = mid
+
+        price_move_map: Dict[str, Optional[float]] = {}
+        if token_to_market:
+            one_hour_ago = now - timedelta(hours=1)
+            price_result = await session.execute(
+                select(
+                    Trade.token_id,
+                    func.min(Trade.price).label("low"),
+                    func.max(Trade.price).label("high"),
+                )
+                .where(Trade.token_id.in_(list(token_to_market.keys())))
+                .where(Trade.timestamp >= one_hour_ago)
+                .group_by(Trade.token_id)
+            )
+            for tid, low, high in price_result.all():
+                mid = token_to_market.get(tid)
+                if mid and low and high and float(low) > 0:
+                    price_move_map[mid] = round((float(high) - float(low)) / float(low), 4)
+
         # ── Score in Python (no more DB queries) ──
+        from services.opportunity_explainer import build_explanation
+
         opportunities = []
         for mid in valid_ids:
             market = markets.get(mid)
@@ -369,6 +404,20 @@ class SafetyScorer:
             why_safe = self._explain_why_safe(metrics, total)
             what_could_go_wrong = self._explain_risks(metrics)
 
+            # Build explanation with profit estimates
+            explanation_metrics = {
+                "freshness_minutes": metrics.freshness_minutes,
+                "spread_pct": metrics.spread_pct,
+                "total_depth": metrics.total_depth,
+                "best_bid": metrics.best_bid,
+                "best_ask": metrics.best_ask,
+                "signal_count": metrics.signal_count,
+                "slippage_100_eur": None,
+                "recent_price_move_pct": price_move_map.get(mid),
+                "typical_move_pct_24h": None,
+            }
+            explanation = build_explanation(sig["types"], explanation_metrics)
+
             opportunities.append({
                 "market_id": mid,
                 "market_question": market.question,
@@ -394,6 +443,7 @@ class SafetyScorer:
                     "volume_ratio": None,
                     "slippage_100_eur": None,
                 },
+                "explanation": explanation,
                 "why_safe": why_safe,
                 "what_could_go_wrong": what_could_go_wrong,
                 "last_updated": ob["timestamp"].isoformat(),

@@ -14,9 +14,29 @@ import {
   Plus,
   ExternalLink,
   Clock,
+  DollarSign,
+  Zap,
+  Eye,
+  Pause,
+  Target,
 } from 'lucide-react';
-import type { ChecklistItem as ChecklistItemType, Scores, Metrics } from '@/api/briefing';
+import type { ChecklistItem as ChecklistItemType, Scores, Metrics, Explanation } from '@/api/briefing';
 import { useState } from 'react';
+
+function HowToMonetizePill({ status, reason }: { status: string; reason: string }) {
+  const config = {
+    act_now: { icon: <Zap className="w-3 h-3" />, label: 'Act Now', className: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-300' },
+    watch: { icon: <Eye className="w-3 h-3" />, label: 'Watch', className: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300' },
+    wait: { icon: <Pause className="w-3 h-3" />, label: 'Wait', className: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300' },
+  }[status] || { icon: null, label: status, className: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300' };
+
+  return (
+    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${config.className}`} title={reason}>
+      {config.icon}
+      {config.label}
+    </span>
+  );
+}
 
 function SafetyScoreRing({ score, size = 'lg' }: { score: number; size?: 'sm' | 'lg' }) {
   const color = score >= 70 ? 'text-emerald-500' : score >= 50 ? 'text-amber-500' : 'text-red-500';
@@ -262,6 +282,67 @@ export function OpportunityDetailPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Content - 2 cols */}
         <div className="lg:col-span-2 space-y-6">
+          {/* How to Monetize */}
+          {data.explanation && (
+            <Card className="p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <Target className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-50">How to Monetize</h2>
+                <HowToMonetizePill status={data.explanation.best_time_to_act.status} reason={data.explanation.best_time_to_act.reason} />
+              </div>
+              <div className="space-y-4">
+                <div>
+                  <h3 className="font-medium text-gray-700 dark:text-gray-200 mb-1">Opportunity</h3>
+                  <p className="text-gray-600 dark:text-gray-300">{data.explanation.opportunity}</p>
+                </div>
+                <div>
+                  <h3 className="font-medium text-gray-700 dark:text-gray-200 mb-1">Action</h3>
+                  <p className="text-gray-600 dark:text-gray-300">{data.explanation.action}</p>
+                </div>
+                <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
+                  <h3 className="font-medium text-gray-700 dark:text-gray-200 mb-2 flex items-center gap-2">
+                    <DollarSign className="w-4 h-4" />
+                    Profit per €1
+                  </h3>
+                  <div className="grid grid-cols-2 gap-4 mb-2">
+                    <div>
+                      <span className="text-sm text-gray-500 dark:text-gray-400">Conservative</span>
+                      <p className="text-lg font-semibold text-gray-900 dark:text-gray-50">
+                        {data.explanation.profit_per_eur.conservative !== null
+                          ? `€${(data.explanation.profit_per_eur.conservative * 100).toFixed(1)}¢`
+                          : 'N/A'}
+                      </p>
+                    </div>
+                    <div>
+                      <span className="text-sm text-gray-500 dark:text-gray-400">Optimistic</span>
+                      <p className="text-lg font-semibold text-emerald-600 dark:text-emerald-400">
+                        {data.explanation.profit_per_eur.optimistic !== null
+                          ? `€${(data.explanation.profit_per_eur.optimistic * 100).toFixed(1)}¢`
+                          : 'N/A'}
+                      </p>
+                    </div>
+                  </div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{data.explanation.profit_per_eur.note}</p>
+                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-1 italic">{data.explanation.profit_math}</p>
+                </div>
+                {data.explanation.risks.length > 0 && (
+                  <div>
+                    <h3 className="font-medium text-gray-700 dark:text-gray-200 mb-2">Key Risks</h3>
+                    <ul className="space-y-1">
+                      {data.explanation.risks.map((risk, i) => (
+                        <li key={i} className="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-300">
+                          <AlertCircle className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
+                          {risk}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                <p className="text-xs text-gray-400 dark:text-gray-500">{data.explanation.best_time_to_act.reason}</p>
+              </div>
+            </Card>
+          )}
+
           {/* Teach Me Panel */}
           <Card className="p-6">
             <div className="flex items-center gap-2 mb-4">

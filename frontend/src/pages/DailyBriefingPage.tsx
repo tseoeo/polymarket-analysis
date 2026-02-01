@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/Badge';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { useDailyBriefing } from '@/hooks/useBriefing';
-import { Clock, TrendingUp, AlertCircle, Lightbulb, ChevronRight, Shield, AlertTriangle } from 'lucide-react';
+import { Clock, TrendingUp, AlertCircle, Lightbulb, ChevronRight, Shield, AlertTriangle, DollarSign, Eye, Pause, Zap } from 'lucide-react';
 import type { Opportunity } from '@/api/briefing';
 
 function SafetyScoreBadge({ score }: { score: number }) {
@@ -49,15 +49,58 @@ function FreshnessBadge({ minutes }: { minutes: number | null }) {
   return <Badge color="red">Stale ({minutes.toFixed(0)}m)</Badge>;
 }
 
+function BestTimePill({ status, reason }: { status: string; reason: string }) {
+  const config = {
+    act_now: { icon: <Zap className="w-3 h-3" />, className: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-300' },
+    watch: { icon: <Eye className="w-3 h-3" />, className: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300' },
+    wait: { icon: <Pause className="w-3 h-3" />, className: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300' },
+  }[status] || { icon: null, className: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300' };
+
+  return (
+    <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${config.className}`} title={reason}>
+      {config.icon}
+      {status === 'act_now' ? 'Act Now' : status === 'watch' ? 'Watch' : 'Wait'}
+    </div>
+  );
+}
+
+function ProfitDisplay({ conservative, optimistic, note }: { conservative: number | null; optimistic: number | null; note: string }) {
+  if (conservative === null && optimistic === null) {
+    return <p className="text-xs text-gray-400 dark:text-gray-500 italic">{note || 'N/A'}</p>;
+  }
+  const fmt = (v: number) => `€${(v * 100).toFixed(1)}¢`;
+  return (
+    <div className="space-y-1">
+      <div className="flex items-center gap-3 text-sm">
+        <DollarSign className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500 flex-shrink-0" />
+        <div className="flex gap-3">
+          {conservative !== null && (
+            <span className="text-gray-600 dark:text-gray-300">
+              Conservative: <span className="font-medium">{fmt(conservative)}</span>/€1
+            </span>
+          )}
+          {optimistic !== null && (
+            <span className="text-emerald-600 dark:text-emerald-400">
+              Optimistic: <span className="font-medium">{fmt(optimistic)}</span>/€1
+            </span>
+          )}
+        </div>
+      </div>
+      <p className="text-xs text-gray-400 dark:text-gray-500 ml-6">{note}</p>
+    </div>
+  );
+}
+
 function OpportunityCard({ opportunity }: { opportunity: Opportunity }) {
-  const { metrics, scores } = opportunity;
+  const { metrics, scores, explanation } = opportunity;
 
   return (
     <Card className="p-5 hover:shadow-md transition-shadow">
-      <div className="flex items-start justify-between mb-4">
+      <div className="flex items-start justify-between mb-3">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-2">
             <FreshnessBadge minutes={metrics.freshness_minutes} />
+            {explanation && <BestTimePill status={explanation.best_time_to_act.status} reason={explanation.best_time_to_act.reason} />}
             {opportunity.category && (
               <span className="text-xs text-gray-400 dark:text-gray-500">{opportunity.category}</span>
             )}
@@ -71,22 +114,27 @@ function OpportunityCard({ opportunity }: { opportunity: Opportunity }) {
         </div>
       </div>
 
+      {/* Explanation */}
+      {explanation && (
+        <div className="mb-3 space-y-2">
+          <p className="text-sm text-gray-700 dark:text-gray-200">{explanation.opportunity}</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">{explanation.action}</p>
+          <ProfitDisplay
+            conservative={explanation.profit_per_eur.conservative}
+            optimistic={explanation.profit_per_eur.optimistic}
+            note={explanation.profit_per_eur.note}
+          />
+        </div>
+      )}
+
       {/* Key Metrics */}
-      <div className="grid grid-cols-2 gap-4 mb-4">
-        <MetricBar
-          value={metrics.total_depth}
-          max={5000}
-          label="Depth ($)"
-        />
-        <MetricBar
-          value={scores.spread}
-          max={20}
-          label="Spread Score"
-        />
+      <div className="grid grid-cols-2 gap-4 mb-3">
+        <MetricBar value={metrics.total_depth} max={5000} label="Depth ($)" />
+        <MetricBar value={scores.spread} max={20} label="Spread Score" />
       </div>
 
       {/* Spread & Depth Details */}
-      <div className="flex gap-4 text-sm text-gray-600 dark:text-gray-300 mb-4">
+      <div className="flex gap-4 text-sm text-gray-600 dark:text-gray-300 mb-3">
         <div>
           <span className="text-gray-400 dark:text-gray-500">Spread:</span>{' '}
           {metrics.spread_pct !== null ? `${(metrics.spread_pct * 100).toFixed(2)}%` : 'N/A'}
@@ -97,17 +145,17 @@ function OpportunityCard({ opportunity }: { opportunity: Opportunity }) {
         </div>
       </div>
 
-      {/* Why Safe / What Could Go Wrong */}
-      <div className="space-y-2 mb-4">
-        <div className="flex items-start gap-2">
-          <TrendingUp className="w-4 h-4 text-emerald-500 mt-0.5 flex-shrink-0" />
-          <p className="text-sm text-gray-600 dark:text-gray-300">{opportunity.why_safe}</p>
+      {/* Risks */}
+      {explanation && explanation.risks.length > 0 && (
+        <div className="mb-3">
+          <div className="flex items-start gap-2">
+            <AlertCircle className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              {explanation.risks[0]}
+            </p>
+          </div>
         </div>
-        <div className="flex items-start gap-2">
-          <AlertCircle className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
-          <p className="text-sm text-gray-500 dark:text-gray-400">{opportunity.what_could_go_wrong}</p>
-        </div>
-      </div>
+      )}
 
       {/* Action */}
       <Link

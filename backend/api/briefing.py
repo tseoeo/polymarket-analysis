@@ -55,6 +55,32 @@ class OutcomeResponse(BaseModel):
     price: Optional[float] = None
 
 
+class ProfitPerEurResponse(BaseModel):
+    """Profit estimate per €1."""
+
+    conservative: Optional[float] = None
+    optimistic: Optional[float] = None
+    note: str = ""
+
+
+class BestTimeToActResponse(BaseModel):
+    """Actionability signal."""
+
+    status: str  # act_now, watch, wait
+    reason: str
+
+
+class ExplanationResponse(BaseModel):
+    """Plain-language explanation of an opportunity."""
+
+    opportunity: str
+    action: str
+    profit_per_eur: ProfitPerEurResponse
+    profit_math: str
+    risks: List[str] = []
+    best_time_to_act: BestTimeToActResponse
+
+
 class OpportunityResponse(BaseModel):
     """A safe trading opportunity."""
 
@@ -66,6 +92,8 @@ class OpportunityResponse(BaseModel):
     safety_score: int
     scores: ScoresResponse
     metrics: MetricsResponse
+
+    explanation: Optional[ExplanationResponse] = None
 
     why_safe: str
     what_could_go_wrong: str
@@ -96,6 +124,8 @@ class MarketDetailResponse(BaseModel):
     safety_score: int
     scores: ScoresResponse
     metrics: MetricsResponse
+
+    explanation: Optional[ExplanationResponse] = None
 
     why_safe: str
     what_could_go_wrong: str
@@ -262,6 +292,17 @@ async def get_daily_briefing(
         )
 
     def _to_response(opp):
+        explanation = None
+        if opp.get("explanation"):
+            exp = opp["explanation"]
+            explanation = ExplanationResponse(
+                opportunity=exp["opportunity"],
+                action=exp["action"],
+                profit_per_eur=ProfitPerEurResponse(**exp["profit_per_eur"]),
+                profit_math=exp["profit_math"],
+                risks=exp["risks"],
+                best_time_to_act=BestTimeToActResponse(**exp["best_time_to_act"]),
+            )
         return OpportunityResponse(
             market_id=opp["market_id"],
             market_question=opp["market_question"],
@@ -270,6 +311,7 @@ async def get_daily_briefing(
             safety_score=opp["safety_score"],
             scores=ScoresResponse(**opp["scores"]),
             metrics=MetricsResponse(**opp["metrics"]),
+            explanation=explanation,
             why_safe=opp["why_safe"],
             what_could_go_wrong=opp["what_could_go_wrong"],
             last_updated=opp.get("last_updated"),
@@ -344,6 +386,21 @@ async def get_opportunity_detail(
             if score.metrics.last_orderbook_time else None,
     }
 
+    # Build explanation
+    from services.opportunity_explainer import build_explanation
+    exp_data = build_explanation(
+        opp["metrics"]["active_signals"],
+        opp["metrics"],
+    )
+    explanation = ExplanationResponse(
+        opportunity=exp_data["opportunity"],
+        action=exp_data["action"],
+        profit_per_eur=ProfitPerEurResponse(**exp_data["profit_per_eur"]),
+        profit_math=exp_data["profit_math"],
+        risks=exp_data["risks"],
+        best_time_to_act=BestTimeToActResponse(**exp_data["best_time_to_act"]),
+    )
+
     return MarketDetailResponse(
         market_id=opp["market_id"],
         market_question=opp["market_question"],
@@ -352,6 +409,7 @@ async def get_opportunity_detail(
         safety_score=opp["safety_score"],
         scores=ScoresResponse(**opp["scores"]),
         metrics=MetricsResponse(**opp["metrics"]),
+        explanation=explanation,
         why_safe=opp["why_safe"],
         what_could_go_wrong=opp["what_could_go_wrong"],
         teach_me=generate_teach_me_content(opp),
