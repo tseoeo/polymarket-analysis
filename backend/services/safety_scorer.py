@@ -219,9 +219,20 @@ class SafetyScorer:
         now = datetime.utcnow()
         freshness_cutoff = now - timedelta(minutes=self.max_freshness)
 
-        # Get active markets with recent orderbook data
+        # Pre-filter: only markets with a recent orderbook snapshot.
+        # This avoids scoring thousands of stale markets (N+1 query problem).
+        latest_ob = (
+            select(
+                OrderBookSnapshot.market_id,
+                func.max(OrderBookSnapshot.timestamp).label("latest_ts"),
+            )
+            .where(OrderBookSnapshot.timestamp >= freshness_cutoff)
+            .group_by(OrderBookSnapshot.market_id)
+        ).subquery()
+
         result = await session.execute(
             select(Market)
+            .join(latest_ob, Market.id == latest_ob.c.market_id)
             .where(Market.active == True)
         )
         markets = result.scalars().all()
