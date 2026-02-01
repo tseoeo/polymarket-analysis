@@ -1,5 +1,17 @@
 # Project Context for Claude
 
+## Workflow (MANDATORY)
+
+Every code change MUST follow these steps:
+
+1. **Before starting**: Read `.claude/REGISTRY.md` and `.claude/ISSUES.md`
+2. **Pick or create** a Queue item (Q-###) for the work
+3. **Move to In Progress** (W-###) when you start coding
+4. **Move to Done** (D-###) when finished, with outcome, files changed, and test results
+5. **Log any bugs or issues** discovered during work in `.claude/ISSUES.md`
+
+Do NOT skip this. Update the registry even for small fixes.
+
 ## Deployment
 
 - **Railway** is connected to GitHub - pushing to `main` triggers automatic deployment

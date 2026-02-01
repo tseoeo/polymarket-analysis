@@ -88,6 +88,15 @@
   - Files: backend/jobs/scheduler.py
   - Tests: not run (deployed, awaiting verification)
 
+- D-XXX | Review: UX revamp | Reviewer: Codex | 2026-01-25
+  - Findings: SafetyScorer only checks related_market_ids (misses market_id alerts); watchlist uses score after exceptions; teach-me mapping misses spread_alert/mm_pullback; truthy checks mishandle 0 values; daily briefing may be slow without batching
+  - Issues: see .claude/plans/ux-revamp-review.md
+
+- D-014 | Fix slow daily briefing endpoint | Owner: Claude | 2026-02-01
+  - Outcome: Pre-filter markets via SQL subquery join on recent orderbook snapshots, fixing N+1 query problem
+  - Files: backend/services/safety_scorer.py (get_safe_opportunities)
+  - Tests: pytest tests/test_safety_scorer.py tests/test_advanced_analytics.py tests/test_integration.py - 24 passed
+
 ## Templates
 
 Queue:
