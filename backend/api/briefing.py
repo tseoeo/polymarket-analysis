@@ -74,12 +74,15 @@ class OpportunityResponse(BaseModel):
 
 
 class DailyBriefingResponse(BaseModel):
-    """Daily briefing with safe opportunities."""
+    """Daily briefing with safe opportunities and optional learning picks."""
 
     generated_at: str
     opportunity_count: int
     opportunities: List[OpportunityResponse]
     learning_tip: str
+    fallback_used: bool = False
+    fallback_reason: Optional[str] = None
+    learning_opportunities: List[OpportunityResponse] = []
 
 
 class MarketDetailResponse(BaseModel):
@@ -245,6 +248,33 @@ async def get_daily_briefing(
     scorer = SafetyScorer()
     opportunities = await scorer.get_safe_opportunities(session, limit=limit)
 
+    fallback_used = len(opportunities) < limit
+    learning_opps = []
+    fallback_reason = None
+
+    if fallback_used:
+        fallback_reason = "Not enough markets passed strict safety filters"
+        safe_ids = {opp["market_id"] for opp in opportunities}
+        learning_opps = await scorer.get_learning_opportunities(
+            session,
+            limit=limit - len(opportunities),
+            exclude_ids=safe_ids,
+        )
+
+    def _to_response(opp):
+        return OpportunityResponse(
+            market_id=opp["market_id"],
+            market_question=opp["market_question"],
+            category=opp.get("category"),
+            outcomes=opp.get("outcomes"),
+            safety_score=opp["safety_score"],
+            scores=ScoresResponse(**opp["scores"]),
+            metrics=MetricsResponse(**opp["metrics"]),
+            why_safe=opp["why_safe"],
+            what_could_go_wrong=opp["what_could_go_wrong"],
+            last_updated=opp.get("last_updated"),
+        )
+
     # Select a learning tip based on the day
     import random
     tip = random.choice(LEARNING_TIPS)
@@ -252,22 +282,11 @@ async def get_daily_briefing(
     return DailyBriefingResponse(
         generated_at=datetime.utcnow().isoformat(),
         opportunity_count=len(opportunities),
-        opportunities=[
-            OpportunityResponse(
-                market_id=opp["market_id"],
-                market_question=opp["market_question"],
-                category=opp.get("category"),
-                outcomes=opp.get("outcomes"),
-                safety_score=opp["safety_score"],
-                scores=ScoresResponse(**opp["scores"]),
-                metrics=MetricsResponse(**opp["metrics"]),
-                why_safe=opp["why_safe"],
-                what_could_go_wrong=opp["what_could_go_wrong"],
-                last_updated=opp.get("last_updated"),
-            )
-            for opp in opportunities
-        ],
+        opportunities=[_to_response(opp) for opp in opportunities],
         learning_tip=tip,
+        fallback_used=fallback_used,
+        fallback_reason=fallback_reason,
+        learning_opportunities=[_to_response(opp) for opp in learning_opps],
     )
 
 

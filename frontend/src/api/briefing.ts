@@ -41,6 +41,9 @@ export interface DailyBriefingResponse {
   opportunity_count: number;
   opportunities: Opportunity[];
   learning_tip: string;
+  fallback_used: boolean;
+  fallback_reason: string | null;
+  learning_opportunities: Opportunity[];
 }
 
 export interface ChecklistItem {

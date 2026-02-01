@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/Badge';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { useDailyBriefing } from '@/hooks/useBriefing';
-import { Clock, TrendingUp, AlertCircle, Lightbulb, ChevronRight, Shield } from 'lucide-react';
+import { Clock, TrendingUp, AlertCircle, Lightbulb, ChevronRight, Shield, AlertTriangle } from 'lucide-react';
 import type { Opportunity } from '@/api/briefing';
 
 function SafetyScoreBadge({ score }: { score: number }) {
@@ -171,39 +171,71 @@ export function DailyBriefingPage() {
         </div>
       )}
 
-      {/* Empty State */}
-      {data && data.opportunities.length === 0 && (
-        <EmptyState
-          title="No safe opportunities today"
-          description="No markets currently pass all safety filters. Check back later or explore the markets page for learning."
-        />
-      )}
-
       {/* Content */}
-      {data && data.opportunities.length > 0 && (
+      {data && (
         <div className="space-y-6">
           {/* Learning Tip */}
           <LearningTip tip={data.learning_tip} />
 
-          {/* Opportunity Count */}
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-medium text-gray-900 dark:text-gray-50">
-              Top {data.opportunity_count} Safe Opportunities
-            </h2>
-            <Link
-              to="/watchlist"
-              className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
-            >
-              View Watchlist
-            </Link>
-          </div>
+          {/* Safe Opportunities */}
+          {data.opportunities.length > 0 && (
+            <>
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-medium text-gray-900 dark:text-gray-50">
+                  Top {data.opportunity_count} Safe Opportunities
+                </h2>
+                <Link
+                  to="/watchlist"
+                  className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
+                >
+                  View Watchlist
+                </Link>
+              </div>
 
-          {/* Opportunities Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {data.opportunities.map((opp) => (
-              <OpportunityCard key={opp.market_id} opportunity={opp} />
-            ))}
-          </div>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {data.opportunities.map((opp) => (
+                  <OpportunityCard key={opp.market_id} opportunity={opp} />
+                ))}
+              </div>
+            </>
+          )}
+
+          {/* No safe opportunities message */}
+          {data.opportunities.length === 0 && (
+            <EmptyState
+              title="No safe opportunities today"
+              description="No markets currently pass all strict safety filters. Learning picks are shown below."
+            />
+          )}
+
+          {/* Learning Picks (Fallback) */}
+          {data.fallback_used && data.learning_opportunities.length > 0 && (
+            <>
+              <div className="flex items-center gap-3">
+                <AlertTriangle className="w-5 h-5 text-amber-500" />
+                <h2 className="text-lg font-medium text-gray-900 dark:text-gray-50">
+                  Learning Picks (Not Safe-Only)
+                </h2>
+              </div>
+              <Card className="p-3 bg-amber-50 dark:bg-amber-950 border-amber-200 dark:border-amber-800">
+                <p className="text-sm text-amber-800 dark:text-amber-300">
+                  These do not meet all safety filters. Use them to learn, not to trade aggressively.
+                </p>
+              </Card>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {data.learning_opportunities.map((opp) => (
+                  <div key={opp.market_id} className="relative">
+                    <div className="absolute top-3 right-3 z-10">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-300 border border-amber-200 dark:border-amber-700">
+                        Learning Pick
+                      </span>
+                    </div>
+                    <OpportunityCard opportunity={opp} />
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
 
           {/* Safety Score Legend */}
           <Card className="p-4 bg-gray-50 dark:bg-gray-800">

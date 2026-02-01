@@ -11,6 +11,8 @@
 
 <!-- Active work. Claude moves here when starting. -->
 
+<!-- Active work. Claude moves here when starting. -->
+
 ## Done
 
 <!-- Completed work + review entries. -->
@@ -91,6 +93,11 @@
 - D-XXX | Review: UX revamp | Reviewer: Codex | 2026-01-25
   - Findings: SafetyScorer only checks related_market_ids (misses market_id alerts); watchlist uses score after exceptions; teach-me mapping misses spread_alert/mm_pullback; truthy checks mishandle 0 values; daily briefing may be slow without batching
   - Issues: see .claude/plans/ux-revamp-review.md
+
+- D-015 | Fix briefing perf + two-tier fallback | Owner: Claude | 2026-02-01
+  - Outcome: SQL pre-filter by alert count + orderbook freshness (N+1 fix), two-tier safe/learning scoring, updated API schema with fallback fields, frontend learning picks UI with amber warnings, 3 new tests
+  - Files: backend/services/safety_scorer.py, backend/api/briefing.py, frontend/src/pages/DailyBriefingPage.tsx, frontend/src/api/briefing.ts, backend/tests/test_safety_scorer.py
+  - Tests: pytest tests/test_safety_scorer.py tests/test_integration.py tests/test_advanced_analytics.py - 27 passed
 
 - D-014 | Fix slow daily briefing endpoint | Owner: Claude | 2026-02-01
   - Outcome: Pre-filter markets via SQL subquery join on recent orderbook snapshots, fixing N+1 query problem

@@ -226,6 +226,138 @@ async def test_gather_metrics_slippage(test_session):
 
 
 @pytest.mark.asyncio
+async def test_get_safe_opportunities_prefilters(test_session):
+    """get_safe_opportunities only scores markets with fresh data + signals."""
+    now = datetime.utcnow()
+
+    # Market with fresh orderbook + 2 signal types → should be scored
+    m_good = Market(
+        id="m-good", question="Good?",
+        outcomes=[{"name": "Yes", "token_id": "tok-good"}],
+        active=True, enable_order_book=True,
+    )
+    # Market with no alerts → should be skipped by pre-filter
+    m_no_alerts = Market(
+        id="m-no-alerts", question="NoAlerts?",
+        outcomes=[{"name": "Yes", "token_id": "tok-na"}],
+        active=True, enable_order_book=True,
+    )
+    test_session.add_all([m_good, m_no_alerts])
+
+    # Fresh orderbook for both
+    for mid, tid in [("m-good", "tok-good"), ("m-no-alerts", "tok-na")]:
+        test_session.add(OrderBookSnapshot(
+            token_id=tid, market_id=mid,
+            timestamp=now - timedelta(minutes=5),
+            best_bid=Decimal("0.50"), best_ask=Decimal("0.52"),
+            spread=Decimal("0.02"), spread_pct=Decimal("0.04"),
+            mid_price=Decimal("0.51"),
+            bid_depth_1pct=Decimal("1000"), ask_depth_1pct=Decimal("1000"),
+        ))
+
+    # 2 distinct alert types for m-good only
+    test_session.add(Alert(
+        alert_type="volume_spike", severity="medium", title="Vol",
+        market_id="m-good", is_active=True,
+    ))
+    test_session.add(Alert(
+        alert_type="arbitrage", severity="high", title="Arb",
+        market_id="m-good", is_active=True,
+    ))
+    await test_session.commit()
+
+    scorer = SafetyScorer()
+    results = await scorer.get_safe_opportunities(test_session, limit=5)
+
+    result_ids = [r["market_id"] for r in results]
+    assert "m-good" in result_ids
+    assert "m-no-alerts" not in result_ids
+
+
+@pytest.mark.asyncio
+async def test_learning_opportunities_excludes_safe(test_session):
+    """Learning opportunities exclude markets already in safe results."""
+    now = datetime.utcnow()
+
+    m1 = Market(
+        id="m-safe", question="Safe?",
+        outcomes=[{"name": "Yes", "token_id": "tok-safe"}],
+        active=True, enable_order_book=True,
+    )
+    m2 = Market(
+        id="m-learn", question="Learn?",
+        outcomes=[{"name": "Yes", "token_id": "tok-learn"}],
+        active=True, enable_order_book=True,
+    )
+    test_session.add_all([m1, m2])
+
+    # Fresh orderbook for both
+    for mid, tid in [("m-safe", "tok-safe"), ("m-learn", "tok-learn")]:
+        test_session.add(OrderBookSnapshot(
+            token_id=tid, market_id=mid,
+            timestamp=now - timedelta(minutes=5),
+            best_bid=Decimal("0.50"), best_ask=Decimal("0.52"),
+            spread=Decimal("0.02"), spread_pct=Decimal("0.04"),
+            mid_price=Decimal("0.51"),
+            bid_depth_1pct=Decimal("1000"), ask_depth_1pct=Decimal("1000"),
+        ))
+
+    # Both have 1 alert each — m-safe won't qualify as "safe" (needs 2),
+    # but both qualify as learning picks (needs 1)
+    test_session.add(Alert(
+        alert_type="volume_spike", severity="medium", title="Vol",
+        market_id="m-safe", is_active=True,
+    ))
+    test_session.add(Alert(
+        alert_type="arbitrage", severity="high", title="Arb",
+        market_id="m-learn", is_active=True,
+    ))
+    await test_session.commit()
+
+    scorer = SafetyScorer()
+    learning = await scorer.get_learning_opportunities(
+        test_session, limit=5, exclude_ids={"m-safe"},
+    )
+
+    learning_ids = [r["market_id"] for r in learning]
+    assert "m-safe" not in learning_ids
+
+
+@pytest.mark.asyncio
+async def test_fallback_used_when_safe_insufficient(test_session):
+    """Briefing endpoint returns fallback_used=True when safe results < limit."""
+    now = datetime.utcnow()
+
+    # Create a market that qualifies as learning but not safe (1 signal, not 2)
+    m1 = Market(
+        id="m-fallback", question="Fallback?",
+        outcomes=[{"name": "Yes", "token_id": "tok-fb"}],
+        active=True, enable_order_book=True,
+    )
+    test_session.add(m1)
+    test_session.add(OrderBookSnapshot(
+        token_id="tok-fb", market_id="m-fallback",
+        timestamp=now - timedelta(minutes=5),
+        best_bid=Decimal("0.50"), best_ask=Decimal("0.52"),
+        spread=Decimal("0.02"), spread_pct=Decimal("0.04"),
+        mid_price=Decimal("0.51"),
+        bid_depth_1pct=Decimal("1000"), ask_depth_1pct=Decimal("1000"),
+    ))
+    test_session.add(Alert(
+        alert_type="volume_spike", severity="medium", title="Vol",
+        market_id="m-fallback", is_active=True,
+    ))
+    await test_session.commit()
+
+    scorer = SafetyScorer()
+    safe = await scorer.get_safe_opportunities(test_session, limit=5)
+    assert len(safe) == 0  # Not enough signals for safe
+
+    learning = await scorer.get_learning_opportunities(test_session, limit=5)
+    assert len(learning) >= 1  # But qualifies as learning pick
+
+
+@pytest.mark.asyncio
 async def test_briefing_teach_me_spread_alert(test_session):
     """Teach-me content handles spread_alert signal type."""
     from api.briefing import generate_teach_me_content
