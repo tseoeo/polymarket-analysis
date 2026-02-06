@@ -326,21 +326,48 @@ class RelationshipDetector:
 
     # Helper methods
 
+    def question_similarity(self, q1: str, q2: str) -> float:
+        """Calculate word overlap similarity between two questions."""
+        words1 = set(q1.lower().split())
+        words2 = set(q2.lower().split())
+        stop_words = {"will", "the", "a", "an", "in", "on", "at", "to", "of", "by", "is", "be"}
+        words1 -= stop_words
+        words2 -= stop_words
+        if not words1 or not words2:
+            return 0.0
+        intersection = words1 & words2
+        return len(intersection) / max(len(words1), len(words2))
+
     def _group_by_question_similarity(self, markets: List[Market]) -> Dict[str, List[Market]]:
-        """Group markets by question word overlap."""
-        groups = defaultdict(list)
+        """Group markets by question word overlap using pairwise similarity."""
+        # First pass: coarse grouping by signature for efficiency
+        coarse_groups = defaultdict(list)
         for market in markets:
-            # Create a simple signature from main words
             words = set(re.findall(r'\b\w+\b', market.question.lower()))
-            # Remove common words
             stop_words = {"will", "the", "a", "an", "be", "is", "to", "in", "of", "for"}
             words = words - stop_words
-            # Sort FIRST to ensure deterministic order, THEN slice
             sorted_words = sorted(words)
             signature = "_".join(sorted_words[:5])
             if signature:
-                groups[signature].append(market)
-        return dict(groups)
+                coarse_groups[signature].append(market)
+
+        # Second pass: merge groups with high question similarity
+        merged = dict(coarse_groups)
+        group_keys = list(merged.keys())
+        for i, key1 in enumerate(group_keys):
+            if key1 not in merged:
+                continue
+            for key2 in group_keys[i+1:]:
+                if key2 not in merged:
+                    continue
+                # Compare representative questions from each group
+                rep1 = merged[key1][0].question
+                rep2 = merged[key2][0].question
+                if self.question_similarity(rep1, rep2) > 0.5:
+                    merged[key1].extend(merged[key2])
+                    del merged[key2]
+
+        return merged
 
     def _extract_subjects(self, markets: List[Market]) -> List[str]:
         """Extract differing subjects from similar questions."""
@@ -407,8 +434,4 @@ class RelationshipDetector:
 
     def _questions_are_related(self, q1: str, q2: str) -> bool:
         """Check if two questions are related (high word overlap)."""
-        words1 = set(re.findall(r'\b\w{3,}\b', q1))
-        words2 = set(re.findall(r'\b\w{3,}\b', q2))
-        overlap = len(words1 & words2)
-        total = max(len(words1), len(words2))
-        return overlap / total > 0.5 if total > 0 else False
+        return self.question_similarity(q1, q2) > 0.5

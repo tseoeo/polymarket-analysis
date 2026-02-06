@@ -7,7 +7,7 @@ import { LoadingState } from '@/components/ui/LoadingSpinner';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { useMarket, useMarketAlerts } from '@/hooks';
 import { formatDate, formatCurrency } from '@/lib/utils';
-import { ArrowLeft, BarChart3, Bell, ExternalLink } from 'lucide-react';
+import { ArrowLeft, BarChart3, Bell, ExternalLink, ArrowRight } from 'lucide-react';
 
 export function MarketDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -161,15 +161,26 @@ export function MarketDetailPage() {
             <p className="text-xs text-gray-500 dark:text-gray-400 font-mono break-all">
               {market.id}
             </p>
-            <a
-              href={`https://polymarket.com/event/${market.id}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 mt-3"
-            >
-              View on Polymarket
-              <ExternalLink className="w-3.5 h-3.5" />
-            </a>
+            <div className="flex flex-col gap-2 mt-3">
+              <a
+                href={`https://polymarket.com/event/${market.id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
+              >
+                View on Polymarket
+                <ExternalLink className="w-3.5 h-3.5" />
+              </a>
+              {market.token_ids.length > 0 && (
+                <Link
+                  to={`/orderbook?token=${market.token_ids[0]}`}
+                  className="inline-flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
+                >
+                  Analyze liquidity
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </Link>
+              )}
+            </div>
           </Card>
         </div>
       </div>

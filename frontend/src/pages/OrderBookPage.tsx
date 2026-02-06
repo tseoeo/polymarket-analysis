@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Card } from '@/components/ui/Card';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { Tooltip, InfoBox } from '@/components/ui/Tooltip';
@@ -11,7 +12,8 @@ import {
 } from '@/hooks/useOrderbook';
 
 export function OrderBookPage() {
-  const [tokenId, setTokenId] = useState('');
+  const [searchParams] = useSearchParams();
+  const [tokenId, setTokenId] = useState(searchParams.get('token') || '');
   const [tradeSize, setTradeSize] = useState(1000);
   const [tradeSide, setTradeSide] = useState<'buy' | 'sell'>('buy');
 

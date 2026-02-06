@@ -73,6 +73,7 @@ export interface VolumeLeader {
   volume_24h: number;
   trade_count_24h: number;
   avg_trade_size: number;
+  question: string | null;
 }
 
 export async function fetchVolumeStats(tokenId: string): Promise<VolumeStats> {

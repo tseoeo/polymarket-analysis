@@ -93,6 +93,12 @@ class VolumeAnalyzer:
         # Get existing active volume alerts to avoid duplicates
         existing_alerts = await self._get_existing_alerts(session)
 
+        # Also batch fetch 15-minute volumes for flash spike detection
+        flash_start = now - timedelta(minutes=15)
+        flash_volumes = await self._batch_get_volumes(
+            session, list(token_to_market.keys()), flash_start, now
+        )
+
         # Analyze each token
         for token_id, market_id in token_to_market.items():
             recent_volume = recent_volumes.get(token_id, 0.0)
@@ -109,9 +115,18 @@ class VolumeAnalyzer:
             if hourly_avg <= 0:
                 continue
 
-            # Check for spike
+            # Check for spike (60-min window)
             ratio = recent_volume / hourly_avg
-            if ratio < self.threshold:
+
+            # Also check 15-minute flash spike (scale baseline to 15-min equivalent)
+            flash_volume = flash_volumes.get(token_id, 0.0)
+            quarter_hour_avg = hourly_avg / 4  # 15-min portion of hourly avg
+            flash_ratio = flash_volume / quarter_hour_avg if quarter_hour_avg > 0 else 0
+
+            is_standard_spike = ratio >= self.threshold
+            is_flash_spike = flash_ratio >= 5 and ratio < self.threshold
+
+            if not is_standard_spike and not is_flash_spike:
                 continue
 
             # Check for existing alert (dedup by market_id + token_id)
@@ -119,22 +134,33 @@ class VolumeAnalyzer:
             if alert_key in existing_alerts:
                 continue
 
+            # Use the higher ratio for the alert
+            effective_ratio = max(ratio, flash_ratio)
+            spike_type = "flash_spike" if is_flash_spike else "volume_spike"
+
             # Create alert
             alert = Alert.create_volume_alert(
                 market_id=market_id,
-                title=f"Volume spike: {ratio:.1f}x normal",
-                volume_ratio=ratio,
+                title=f"Volume spike: {effective_ratio:.1f}x normal"
+                      + (" (flash)" if is_flash_spike else ""),
+                volume_ratio=effective_ratio,
                 data={
                     "current_volume": float(recent_volume),
                     "average_volume": float(hourly_avg),
                     "token_id": token_id,
+                    "spike_type": spike_type,
+                    "flash_volume_15m": float(flash_volume),
+                    "flash_ratio": float(flash_ratio),
                 },
             )
             try:
                 session.add(alert)
                 await session.flush()
                 alerts.append(alert)
-                logger.info(f"Volume spike detected: {market_id}/{token_id} at {ratio:.1f}x normal")
+                logger.info(
+                    f"Volume {spike_type} detected: {market_id}/{token_id} "
+                    f"at {effective_ratio:.1f}x normal"
+                )
             except IntegrityError:
                 await session.rollback()
                 # Duplicate — another analyzer already created this alert

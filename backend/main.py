@@ -99,8 +99,47 @@ app = FastAPI(
 # Health check endpoint
 @app.get("/api/health")
 async def health_check():
-    """Health check endpoint for Railway."""
-    return {"status": "ok", "service": "polymarket-analyzer"}
+    """Health check endpoint for Railway with data freshness verification."""
+    from database import async_session_maker
+    from sqlalchemy import select, func
+
+    result = {"status": "healthy", "service": "polymarket-analyzer"}
+
+    try:
+        async with async_session_maker() as session:
+            from models.trade import Trade
+            from models.orderbook import OrderBookSnapshot
+
+            now = datetime.utcnow()
+
+            # Check latest trade timestamp
+            trade_result = await session.execute(
+                select(func.max(Trade.timestamp))
+            )
+            latest_trade = trade_result.scalar()
+
+            # Check latest orderbook timestamp
+            ob_result = await session.execute(
+                select(func.max(OrderBookSnapshot.timestamp))
+            )
+            latest_ob = ob_result.scalar()
+
+            trade_age = (now - latest_trade).total_seconds() / 60 if latest_trade else None
+            ob_age = (now - latest_ob).total_seconds() / 60 if latest_ob else None
+
+            result["trade_data_age_minutes"] = round(trade_age, 1) if trade_age else None
+            result["orderbook_data_age_minutes"] = round(ob_age, 1) if ob_age else None
+
+            if (trade_age and trade_age > 60) or (ob_age and ob_age > 60):
+                result["status"] = "unhealthy"
+            elif (trade_age and trade_age > 30) or (ob_age and ob_age > 30):
+                result["status"] = "degraded"
+    except Exception:
+        # If DB query fails, still return basic health (server is running)
+        result["status"] = "degraded"
+        result["note"] = "Could not check data freshness"
+
+    return result
 
 
 # API info endpoint

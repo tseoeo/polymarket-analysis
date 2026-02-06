@@ -10,20 +10,6 @@
 ## In Progress
 
 <!-- Active work. Claude moves here when starting. -->
-- W-017 | Spec: Precision & Efficiency (12 items) | Owner: Claude | Started: 2026-02-06
-  - Scope: All 12 items from SPEC-precision-efficiency.md
-  - Files: backend/config.py, backend/jobs/scheduler.py, backend/services/*.py, backend/models/alert.py
-  - Risks: Concurrent analyzer change affects all analyzers
-
-- W-018 | Spec: Understandability (7 sections) | Owner: Claude | Started: 2026-02-06
-  - Scope: All 7 sections from SPEC-understandability.md
-  - Files: frontend/src/lib/explanations.ts, frontend/src/pages/*.tsx
-  - Risks: Label-only changes, low risk
-
-- W-019 | Spec: Future Improvements (9 items) | Owner: Claude | Started: 2026-02-06
-  - Scope: All 9 items from SPEC-future-improvements.md
-  - Files: backend/services/*.py, backend/api/health.py, frontend/src/pages/*.tsx
-  - Risks: Some items touch analysis logic
 
 
 
@@ -122,6 +108,21 @@
   - Outcome: Pre-filter markets via SQL subquery join on recent orderbook snapshots, fixing N+1 query problem
   - Files: backend/services/safety_scorer.py (get_safe_opportunities)
   - Tests: pytest tests/test_safety_scorer.py tests/test_advanced_analytics.py tests/test_integration.py - 24 passed
+
+- D-017 | Spec: Precision & Efficiency (12 items) | Owner: Claude | 2026-02-06
+  - Outcome: All 12 backend improvements — lower arb threshold (0.5%), concurrent orderbook collection (10 workers), 15-min analysis cadence, liquidity check before arb alerts, alert dedup keys, depth in dollars, yes-token selection logic, etc.
+  - Files: backend/config.py, backend/jobs/scheduler.py, backend/services/arbitrage_detector.py, backend/services/cross_market_arbitrage.py, backend/services/orderbook_analyzer.py, backend/services/polymarket_client.py, backend/services/volume_analyzer.py, backend/models/alert.py
+  - Tests: pytest -v — 211 passed
+
+- D-018 | Spec: Understandability (7 sections) | Owner: Claude | 2026-02-06
+  - Outcome: Full frontend rewrite for clarity — glossary tooltips, renamed pages (Liquidity & Pricing, Trading Activity Monitor, Liquidity Provider Tracker, Pricing Mistakes), InfoBox explainers, human-readable labels throughout, renamed sidebar nav and alert filters
+  - Files: frontend/src/lib/explanations.ts, frontend/src/pages/OrderBookPage.tsx, frontend/src/pages/VolumePage.tsx, frontend/src/pages/MarketMakerPage.tsx, frontend/src/pages/ArbitragePage.tsx, frontend/src/components/layout/Sidebar.tsx, frontend/src/components/alerts/AlertFilters.tsx
+  - Tests: npx tsc --noEmit — clean
+
+- D-019 | Spec: Future Improvements (9 items) | Owner: Claude | 2026-02-06
+  - Outcome: All 9 improvements — word-overlap similarity for relationship detection, day-of-week spread analysis, 15-min flash spike detection, volatility-adjusted spread thresholds, arbitrage alert expiration (30min), market question in volume leaders, auto-link token IDs from market detail, rate limit monitoring, health check with data freshness
+  - Files: backend/services/relationship_detector.py, backend/services/orderbook_analyzer.py, backend/services/volume_analyzer.py, backend/services/spread_analyzer.py, backend/services/arbitrage_detector.py, backend/services/cross_market_arbitrage.py, backend/services/polymarket_client.py, backend/main.py, backend/api/volume.py, backend/api/markets.py, frontend/src/pages/OrderBookPage.tsx, frontend/src/pages/VolumePage.tsx, frontend/src/pages/MarketDetailPage.tsx, frontend/src/types/market.ts, frontend/src/api/volume.ts, backend/tests/test_health.py
+  - Tests: pytest -v — 211 passed, npx tsc --noEmit — clean
 
 ## Templates
 

@@ -33,6 +33,7 @@ class MarketResponse(BaseModel):
     yes_price: Optional[float] = None
     no_price: Optional[float] = None
     active_alerts: int = 0
+    token_ids: List[str] = []
 
     model_config = {"from_attributes": True}
 

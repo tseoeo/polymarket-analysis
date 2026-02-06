@@ -40,6 +40,11 @@ class SpreadAnalyzer:
         self.spread_threshold = settings.spread_alert_threshold  # 0.05 = 5%
         self.max_age = timedelta(minutes=max_snapshot_age_minutes)
 
+        # Tiered thresholds by liquidity
+        self._high_liq_threshold = 0.03   # > $50k volume/day
+        self._medium_liq_threshold = 0.05  # $5k-$50k
+        self._low_liq_threshold = 0.10     # < $5k
+
     async def analyze(self, session: AsyncSession) -> List[Alert]:
         """Analyze latest orderbook snapshots for spread issues.
 
@@ -56,9 +61,12 @@ class SpreadAnalyzer:
         )
         markets = result.scalars().all()
 
-        # Build token_id -> market_id mapping
+        # Build token_id -> market_id mapping and market volume lookup
         token_to_market: Dict[str, str] = {}
+        market_volumes: Dict[str, float] = {}
         for market in markets:
+            vol = float(market.volume) if market.volume else 0
+            market_volumes[market.id] = vol
             for token_id in market.token_ids:
                 if token_id:
                     token_to_market[token_id] = market.id
@@ -93,7 +101,16 @@ class SpreadAnalyzer:
             if snapshot.spread_pct is None:
                 continue
 
-            if snapshot.spread_pct < self.spread_threshold:
+            # Volatility-adjusted threshold based on market liquidity
+            market_vol = market_volumes.get(market_id, 0)
+            if market_vol > 50000:
+                threshold = self._high_liq_threshold
+            elif market_vol > 5000:
+                threshold = self._medium_liq_threshold
+            else:
+                threshold = self._low_liq_threshold
+
+            if snapshot.spread_pct < threshold:
                 continue
 
             # Check for existing alert (dedup by market_id + token_id)

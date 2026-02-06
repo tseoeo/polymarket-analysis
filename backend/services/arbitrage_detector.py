@@ -234,6 +234,7 @@ class ArbitrageDetector:
                 "price_source": "orderbook_best_ask",
             },
         )
+        alert.expires_at = now + timedelta(minutes=30)
         logger.info(f"Arbitrage opportunity: {market.id} profit={profit:.2%}")
         return alert
 
@@ -285,6 +286,7 @@ class ArbitrageDetector:
                 "price_source": "market_cache",
             },
         )
+        alert.expires_at = datetime.utcnow() + timedelta(minutes=30)
         logger.info(f"Arbitrage opportunity: {market.id} profit={profit:.2%}")
         return alert
 

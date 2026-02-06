@@ -10,6 +10,7 @@ export interface Market {
   yes_price: number | null;
   no_price: number | null;
   active_alerts: number;
+  token_ids: string[];
 }
 
 export interface MarketListResponse {

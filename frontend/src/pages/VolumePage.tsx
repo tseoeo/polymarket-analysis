@@ -172,10 +172,15 @@ export function VolumePage() {
                       <td className="py-4">
                         <Link
                           to={`/markets/${leader.market_id}`}
-                          className="text-blue-600 dark:text-blue-400 hover:underline font-mono text-sm"
+                          className="text-blue-600 dark:text-blue-400 hover:underline text-sm"
                         >
-                          {leader.market_id.slice(0, 16)}...
+                          {leader.question || leader.market_id.slice(0, 16) + '...'}
                         </Link>
+                        {leader.question && (
+                          <span className="block text-xs text-gray-400 dark:text-gray-500 font-mono mt-0.5">
+                            {leader.market_id.slice(0, 12)}...
+                          </span>
+                        )}
                       </td>
                       <td className="py-4 text-right font-mono text-gray-900 dark:text-gray-50">
                         ${leader.volume_24h.toLocaleString(undefined, { maximumFractionDigits: 0 })}

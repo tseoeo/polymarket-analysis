@@ -206,6 +206,14 @@ class OrderbookAnalyzer:
             hour = snap.timestamp.hour
             hourly_data[hour].append(float(snap.spread_pct))
 
+        # Also group by (day_of_week, hour) for finer-grained analysis
+        day_names = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+        day_hour_data = defaultdict(list)
+        for snap in snapshots:
+            dow = snap.timestamp.weekday()
+            hour = snap.timestamp.hour
+            day_hour_data[(dow, hour)].append(float(snap.spread_pct))
+
         # Calculate averages
         hourly_spreads = {}
         for hour, spreads in hourly_data.items():
@@ -213,6 +221,18 @@ class OrderbookAnalyzer:
                 "avg_spread_pct": sum(spreads) / len(spreads),
                 "min_spread_pct": min(spreads),
                 "max_spread_pct": max(spreads),
+                "snapshot_count": len(spreads),
+            }
+
+        # Day-of-week hourly spreads
+        day_hour_spreads = {}
+        for (dow, hour), spreads in day_hour_data.items():
+            key = f"{day_names[dow]} {str(hour).zfill(2)}:00"
+            day_hour_spreads[key] = {
+                "day_of_week": dow,
+                "hour": hour,
+                "day_name": day_names[dow],
+                "avg_spread_pct": sum(spreads) / len(spreads),
                 "snapshot_count": len(spreads),
             }
 
@@ -229,15 +249,23 @@ class OrderbookAnalyzer:
         all_spreads = [float(s.spread_pct) for s in snapshots]
         overall_avg = sum(all_spreads) / len(all_spreads)
 
+        # Find best day+hour combination
+        best_day_hour = None
+        if day_hour_spreads:
+            best_key = min(day_hour_spreads.keys(), key=lambda k: day_hour_spreads[k]["avg_spread_pct"])
+            best_day_hour = day_hour_spreads[best_key]
+
         return {
             "token_id": token_id,
             "analysis_period_hours": hours,
             "snapshot_count": len(snapshots),
             "hourly_spreads": hourly_spreads,
+            "day_hour_spreads": day_hour_spreads,
             "best_hour": best_hour,
             "best_hour_spread": hourly_spreads[best_hour]["avg_spread_pct"],
             "worst_hour": worst_hour,
             "worst_hour_spread": hourly_spreads[worst_hour]["avg_spread_pct"],
+            "best_day_hour": best_day_hour,
             "overall_avg_spread": overall_avg,
         }
 

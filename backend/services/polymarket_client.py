@@ -88,6 +88,10 @@ class PolymarketClient:
         self.api_passphrase = settings.polymarket_api_passphrase
         self.wallet_address = settings.polymarket_wallet_address
 
+        # Rate limit monitoring
+        self.rate_limit_hits = 0
+        self._request_count = 0
+
     def _has_api_credentials(self) -> bool:
         """Check if API credentials are configured."""
         return all([self.api_key, self.api_secret, self.api_passphrase, self.wallet_address])
@@ -137,7 +141,10 @@ class PolymarketClient:
     async def _get(self, url: str, params: Optional[dict] = None) -> dict:
         """Make GET request with error handling and retry."""
         client = await self._get_client()
+        self._request_count += 1
         response = await client.get(url, params=params)
+        if response.status_code == 429:
+            self.rate_limit_hits += 1
         response.raise_for_status()
         return response.json()
 
@@ -548,6 +555,13 @@ class PolymarketClient:
                         bids=raw_data["bids"],
                         asks=raw_data["asks"],
                     ))
+
+        if self.rate_limit_hits > 0:
+            logger.warning(
+                f"Hit rate limits {self.rate_limit_hits} times during orderbook collection "
+                f"({self.rate_limit_hits}/{self._request_count} requests = "
+                f"{self.rate_limit_hits / max(self._request_count, 1) * 100:.0f}%)"
+            )
 
         logger.info(f"Collected {count} order book snapshots")
         return count

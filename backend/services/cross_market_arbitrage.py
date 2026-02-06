@@ -140,6 +140,7 @@ class CrossMarketArbitrageDetector:
                                 "strategy": "sell_all_outcomes",
                             },
                         )
+                        alert.expires_at = datetime.utcnow() + timedelta(minutes=30)
                         try:
                             session.add(alert)
                             await session.flush()
@@ -182,6 +183,7 @@ class CrossMarketArbitrageDetector:
                                 "strategy": "buy_all_outcomes",
                             },
                         )
+                        alert.expires_at = datetime.utcnow() + timedelta(minutes=30)
                         try:
                             session.add(alert)
                             await session.flush()
@@ -264,6 +266,7 @@ class CrossMarketArbitrageDetector:
                     "strategy": "buy_parent_sell_child",
                 },
             )
+            alert.expires_at = datetime.utcnow() + timedelta(minutes=30)
             try:
                 session.add(alert)
                 await session.flush()
@@ -347,6 +350,7 @@ class CrossMarketArbitrageDetector:
                     "strategy": "sell_earlier_buy_later",
                 },
             )
+            alert.expires_at = datetime.utcnow() + timedelta(minutes=30)
             try:
                 session.add(alert)
                 await session.flush()
@@ -430,6 +434,7 @@ class CrossMarketArbitrageDetector:
                     "strategy": "sell_specific_buy_general",
                 },
             )
+            alert.expires_at = datetime.utcnow() + timedelta(minutes=30)
             try:
                 session.add(alert)
                 await session.flush()

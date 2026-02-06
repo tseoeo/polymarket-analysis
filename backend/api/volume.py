@@ -91,6 +91,7 @@ class VolumeLeaderResponse(BaseModel):
 
     market_id: str
     token_id: str
+    question: Optional[str] = None
     volume_24h: float
     trade_count_24h: int
     avg_trade_size: float
@@ -227,10 +228,12 @@ async def get_volume_leaders(
 ):
     """Get top volume markets in the last 24 hours."""
     from datetime import timedelta
+    from models.market import Market
 
     cutoff = datetime.utcnow() - timedelta(hours=24)
 
-    result = await session.execute(
+    # Join with Market to get the question text
+    subq = (
         select(
             Trade.market_id,
             Trade.token_id,
@@ -241,6 +244,18 @@ async def get_volume_leaders(
         .group_by(Trade.market_id, Trade.token_id)
         .order_by(desc("volume_24h"))
         .limit(limit)
+        .subquery()
+    )
+
+    result = await session.execute(
+        select(
+            subq.c.market_id,
+            subq.c.token_id,
+            subq.c.volume_24h,
+            subq.c.trade_count,
+            Market.question,
+        )
+        .outerjoin(Market, Market.id == subq.c.market_id)
     )
     leaders = result.all()
 
@@ -248,6 +263,7 @@ async def get_volume_leaders(
         VolumeLeaderResponse(
             market_id=r[0] or "",
             token_id=r[1] or "",
+            question=r[4],
             volume_24h=float(r[2] or 0),
             trade_count_24h=r[3] or 0,
             avg_trade_size=float(r[2] / r[3]) if r[3] and r[3] > 0 else 0,
