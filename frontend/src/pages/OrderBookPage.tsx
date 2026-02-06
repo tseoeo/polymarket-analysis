@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Card } from '@/components/ui/Card';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { Tooltip, InfoBox } from '@/components/ui/Tooltip';
+import { glossary } from '@/lib/explanations';
 import {
   useOrderbook,
   useSlippage,
@@ -36,23 +38,46 @@ export function OrderBookPage() {
 
   const inputClass = 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-400 focus:border-transparent';
 
+  const spreadHint = (spreadPct: number | null | undefined) => {
+    if (spreadPct == null) return null;
+    const pct = spreadPct * 100;
+    if (pct < 2) return <span className="text-emerald-600 dark:text-emerald-400 text-xs mt-1 block">&#10003; Tight — cheap to trade</span>;
+    if (pct < 5) return <span className="text-yellow-600 dark:text-yellow-400 text-xs mt-1 block">~ Moderate</span>;
+    return <span className="text-red-600 dark:text-red-400 text-xs mt-1 block">&#9888; Wide — expensive to trade</span>;
+  };
+
+  const imbalanceHint = (imbalance: number | null | undefined) => {
+    if (imbalance == null) return null;
+    if (imbalance > 0.1) return <span className="text-xs text-gray-500 dark:text-gray-400 mt-1 block">More buyers than sellers</span>;
+    if (imbalance < -0.1) return <span className="text-xs text-gray-500 dark:text-gray-400 mt-1 block">More sellers than buyers</span>;
+    return <span className="text-xs text-gray-500 dark:text-gray-400 mt-1 block">Roughly balanced</span>;
+  };
+
   return (
     <div className="page-container">
       {/* Header */}
       <div className="mb-6">
         <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-50 mb-2">
-          Order Book Analysis
+          Liquidity & Pricing Analysis
         </h1>
         <p className="text-gray-600 dark:text-gray-300 max-w-2xl">
-          Analyze order book depth, calculate slippage for trade sizes, and identify
-          optimal trading hours based on spread patterns.
+          See how much it actually costs to trade in a market. This page shows you the buy/sell prices,
+          how much your trade size would affect the price, and which hours of the day give you the best deal.
         </p>
       </div>
+
+      {/* Intro Explainer */}
+      <InfoBox variant="info" className="mb-6">
+        <strong>How to read this page:</strong> Every prediction market has an "order book" — a list of all
+        pending buy and sell orders. The <strong>spread</strong> (gap between buy and sell prices) tells you
+        the cost of trading. The <strong>depth</strong> tells you how much money is available. Together, they
+        determine whether a market is cheap or expensive to trade in.
+      </InfoBox>
 
       {/* Token Input */}
       <div className="mb-6">
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
-          Token ID
+          Token ID <Tooltip content={glossary.token_id} />
         </label>
         <input
           type="text"
@@ -61,13 +86,16 @@ export function OrderBookPage() {
           placeholder="Enter token ID to analyze..."
           className={`${inputClass} max-w-md`}
         />
+        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+          Paste a token ID from Polymarket or from one of the market detail pages in this app.
+        </p>
       </div>
 
       {tokenId && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Current Orderbook */}
+          {/* Current Buy & Sell Prices */}
           <Card className="p-4">
-            <h2 className="font-semibold text-gray-900 dark:text-gray-50 mb-4">Current Order Book</h2>
+            <h2 className="font-semibold text-gray-900 dark:text-gray-50 mb-4">Current Buy & Sell Prices</h2>
             {loadingOrderbook && <LoadingSpinner />}
             {orderbookError && (
               <p className="text-red-600 dark:text-red-400 text-sm">Failed to load orderbook</p>
@@ -76,13 +104,17 @@ export function OrderBookPage() {
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">Best Bid</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">
+                      Best Buy Price <Tooltip content={glossary.best_bid} />
+                    </p>
                     <p className="text-lg font-mono text-emerald-600 dark:text-emerald-400">
                       ${orderbook.best_bid?.toFixed(4) || '-'}
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">Best Ask</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">
+                      Best Sell Price <Tooltip content={glossary.best_ask} />
+                    </p>
                     <p className="text-lg font-mono text-red-600 dark:text-red-400">
                       ${orderbook.best_ask?.toFixed(4) || '-'}
                     </p>
@@ -90,26 +122,37 @@ export function OrderBookPage() {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">Spread</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">
+                      Spread (trading cost) <Tooltip content={glossary.spread} />
+                    </p>
                     <p className="text-lg font-mono text-gray-900 dark:text-gray-50">
                       {orderbook.spread_pct ? (orderbook.spread_pct * 100).toFixed(2) : '-'}%
                     </p>
+                    {spreadHint(orderbook.spread_pct)}
                   </div>
                   <div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">Imbalance</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">
+                      Buy/Sell Pressure <Tooltip content={glossary.imbalance} />
+                    </p>
                     <p className={`text-lg font-mono ${
                       (orderbook.imbalance || 0) > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'
                     }`}>
                       {orderbook.imbalance?.toFixed(3) || '-'}
                     </p>
+                    {imbalanceHint(orderbook.imbalance)}
                   </div>
                 </div>
                 {orderbook.depth && (
                   <div className="pt-4 border-t border-gray-100 dark:border-gray-800">
-                    <p className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">Depth</p>
+                    <p className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
+                      Available Liquidity <Tooltip content={glossary.depth} />
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+                      Money available at each price distance — buy orders (green) / sell orders (red)
+                    </p>
                     {Object.entries(orderbook.depth).map(([level, data]) => (
                       <div key={level} className="flex justify-between text-sm py-1">
-                        <span className="text-gray-600 dark:text-gray-300">At {level}:</span>
+                        <span className="text-gray-600 dark:text-gray-300">Within {level} of price:</span>
                         <span>
                           <span className="text-emerald-600 dark:text-emerald-400">${data.bid_depth.toFixed(0)}</span>
                           {' / '}
@@ -123,12 +166,12 @@ export function OrderBookPage() {
             )}
           </Card>
 
-          {/* Slippage Calculator */}
+          {/* Price Impact Calculator */}
           <Card className="p-4">
-            <h2 className="font-semibold text-gray-900 dark:text-gray-50 mb-4">Slippage Calculator</h2>
+            <h2 className="font-semibold text-gray-900 dark:text-gray-50 mb-4">Price Impact Calculator</h2>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm text-gray-600 dark:text-gray-300 mb-1">Trade Size ($)</label>
+                <label className="block text-sm text-gray-600 dark:text-gray-300 mb-1">How much do you want to trade? ($)</label>
                 <input
                   type="number"
                   value={tradeSize}
@@ -137,29 +180,33 @@ export function OrderBookPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm text-gray-600 dark:text-gray-300 mb-1">Side</label>
+                <label className="block text-sm text-gray-600 dark:text-gray-300 mb-1">Are you buying or selling?</label>
                 <select
                   value={tradeSide}
                   onChange={(e) => setTradeSide(e.target.value as 'buy' | 'sell')}
                   className={inputClass}
                 >
-                  <option value="buy">Buy</option>
-                  <option value="sell">Sell</option>
+                  <option value="buy">Buying (going long)</option>
+                  <option value="sell">Selling (going short)</option>
                 </select>
               </div>
               {loadingSlippage && <LoadingSpinner />}
               {slippage && !slippage.error && (
                 <div className="pt-4 border-t border-gray-100 dark:border-gray-800 space-y-2">
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-600 dark:text-gray-300">Best Price:</span>
+                    <span className="text-gray-600 dark:text-gray-300">Best available price:</span>
                     <span className="font-mono">${slippage.best_price?.toFixed(4)}</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-600 dark:text-gray-300">Expected Price:</span>
+                    <span className="text-gray-600 dark:text-gray-300">
+                      Price you'd actually get: <Tooltip content={glossary.expected_price} />
+                    </span>
                     <span className="font-mono">${slippage.expected_price?.toFixed(4)}</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-600 dark:text-gray-300">Slippage:</span>
+                    <span className="text-gray-600 dark:text-gray-300">
+                      Price impact: <Tooltip content={glossary.slippage} />
+                    </span>
                     <span className={`font-mono ${
                       (slippage.slippage_pct || 0) > 0.01 ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-gray-50'
                     }`}>
@@ -167,9 +214,16 @@ export function OrderBookPage() {
                     </span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-600 dark:text-gray-300">Levels Consumed:</span>
+                    <span className="text-gray-600 dark:text-gray-300">
+                      Price levels needed: <Tooltip content={glossary.levels_consumed} />
+                    </span>
                     <span className="font-mono">{slippage.levels_consumed}</span>
                   </div>
+                  {(slippage.slippage_pct || 0) > 0.02 && (
+                    <div className="mt-2 p-2 bg-amber-50 dark:bg-amber-950 rounded text-xs text-amber-800 dark:text-amber-300">
+                      &#9888; High price impact. Consider splitting into smaller trades or waiting for more liquidity.
+                    </div>
+                  )}
                 </div>
               )}
               {slippage?.error && (
@@ -178,9 +232,9 @@ export function OrderBookPage() {
             </div>
           </Card>
 
-          {/* Best Trading Hours */}
+          {/* Best Times to Trade */}
           <Card className="p-4">
-            <h2 className="font-semibold text-gray-900 dark:text-gray-50 mb-4">Best Trading Hours</h2>
+            <h2 className="font-semibold text-gray-900 dark:text-gray-50 mb-4">Best Times to Trade</h2>
             {loadingBestHours && <LoadingSpinner />}
             {bestHours && bestHours.length > 0 && (
               <div className="space-y-2">
@@ -217,15 +271,17 @@ export function OrderBookPage() {
             )}
           </Card>
 
-          {/* Spread Patterns */}
+          {/* Trading Cost Patterns (24h) */}
           <Card className="p-4">
-            <h2 className="font-semibold text-gray-900 dark:text-gray-50 mb-4">Spread Patterns (24h)</h2>
+            <h2 className="font-semibold text-gray-900 dark:text-gray-50 mb-4">Trading Cost Patterns (24h)</h2>
             {loadingPatterns && <LoadingSpinner />}
             {patterns && (
               <div className="space-y-3">
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
-                    <p className="text-gray-500 dark:text-gray-400">Best Hour</p>
+                    <p className="text-gray-500 dark:text-gray-400">
+                      Cheapest Hour <Tooltip content={glossary.best_hour} />
+                    </p>
                     <p className="font-mono text-gray-900 dark:text-gray-50">
                       {String(patterns.best_hour).padStart(2, '0')}:00
                       <span className="text-emerald-600 dark:text-emerald-400 ml-2">
@@ -234,7 +290,9 @@ export function OrderBookPage() {
                     </p>
                   </div>
                   <div>
-                    <p className="text-gray-500 dark:text-gray-400">Worst Hour</p>
+                    <p className="text-gray-500 dark:text-gray-400">
+                      Most Expensive Hour <Tooltip content={glossary.worst_hour} />
+                    </p>
                     <p className="font-mono text-gray-900 dark:text-gray-50">
                       {String(patterns.worst_hour).padStart(2, '0')}:00
                       <span className="text-red-600 dark:text-red-400 ml-2">
@@ -244,13 +302,13 @@ export function OrderBookPage() {
                   </div>
                 </div>
                 <div>
-                  <p className="text-gray-500 dark:text-gray-400 text-sm">Overall Average</p>
+                  <p className="text-gray-500 dark:text-gray-400 text-sm">Average Trading Cost</p>
                   <p className="font-mono text-gray-900 dark:text-gray-50">
                     {(patterns.overall_avg_spread * 100).toFixed(2)}%
                   </p>
                 </div>
                 <p className="text-xs text-gray-400 dark:text-gray-500">
-                  Based on {patterns.snapshot_count} snapshots
+                  Based on {patterns.snapshot_count} data points <Tooltip content={glossary.snapshot} />
                 </p>
               </div>
             )}

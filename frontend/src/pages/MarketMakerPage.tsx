@@ -4,6 +4,8 @@ import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { Tooltip, InfoBox } from '@/components/ui/Tooltip';
+import { glossary } from '@/lib/explanations';
 import { useMMPullbacks, useBestTradingHoursOverall } from '@/hooks/useMarketMaker';
 
 export function MarketMakerPage() {
@@ -26,11 +28,12 @@ export function MarketMakerPage() {
       {/* Header */}
       <div className="mb-6">
         <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-50 mb-2">
-          Market Maker Analysis
+          Liquidity Provider Tracker
         </h1>
         <p className="text-gray-600 dark:text-gray-300 max-w-2xl">
-          Track market maker activity and liquidity patterns. MM pullbacks often signal
-          upcoming volatility, while activity patterns help identify optimal trading windows.
+          Monitor when professional liquidity providers (market makers) pull their money out of
+          markets. This often happens right before big price moves — it&apos;s like watching the
+          smart money leave the table.
         </p>
       </div>
 
@@ -45,7 +48,7 @@ export function MarketMakerPage() {
                 : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
             }`}
           >
-            MM Pullbacks
+            Liquidity Withdrawals
           </button>
           <button
             onClick={() => setActiveTab('hours')}
@@ -63,13 +66,13 @@ export function MarketMakerPage() {
       {activeTab === 'pullbacks' && (
         <>
           {/* Info Box */}
-          <div className="mb-6 p-4 bg-amber-50 dark:bg-amber-950 rounded-lg border border-amber-200 dark:border-amber-800">
-            <p className="text-sm text-amber-800 dark:text-amber-300">
-              <strong>What is an MM Pullback?</strong> When market makers withdraw liquidity,
-              it often signals that they anticipate volatility or have information about upcoming news.
-              This can create both risk and opportunity.
-            </p>
-          </div>
+          <InfoBox variant="warning" className="mb-6">
+            <strong>What&apos;s happening here?</strong> Market makers are professional traders who
+            keep markets liquid by always offering to buy and sell. When they suddenly pull their
+            money out (a &quot;pullback&quot;), it usually means they expect big price swings ahead
+            — maybe due to upcoming news or insider information. This is a warning sign but also
+            a potential opportunity if you can anticipate the direction.
+          </InfoBox>
 
           {loadingPullbacks && (
             <div className="flex justify-center py-12">
@@ -78,13 +81,13 @@ export function MarketMakerPage() {
           )}
 
           {pullbacksError && (
-            <div className="text-red-600 dark:text-red-400 py-4">Failed to load MM pullbacks</div>
+            <div className="text-red-600 dark:text-red-400 py-4">Failed to load liquidity withdrawals</div>
           )}
 
           {pullbacks && pullbacks.length === 0 && (
             <EmptyState
-              title="No MM pullbacks"
-              description="No significant market maker liquidity withdrawals detected."
+              title="No liquidity withdrawals"
+              description="Liquidity providers are holding steady across all markets. No significant withdrawals right now."
             />
           )}
 
@@ -93,9 +96,9 @@ export function MarketMakerPage() {
               {pullbacks.map((pullback) => (
                 <Card key={pullback.id} className="p-4">
                   <div className="flex items-start justify-between mb-3">
-                    <Badge color="red">MM Pullback</Badge>
+                    <Badge color="red">Liquidity Pulled</Badge>
                     <span className="text-lg font-semibold text-red-600 dark:text-red-400">
-                      -{(pullback.depth_drop_pct * 100).toFixed(0)}%
+                      -{(pullback.depth_drop_pct * 100).toFixed(0)}% gone
                     </span>
                   </div>
                   <h3 className="font-medium text-gray-900 dark:text-gray-50 mb-2 text-sm">
@@ -103,11 +106,11 @@ export function MarketMakerPage() {
                   </h3>
                   <div className="space-y-1 text-sm text-gray-600 dark:text-gray-300">
                     <div className="flex justify-between">
-                      <span>Previous Depth:</span>
+                      <span>Liquidity before: <Tooltip content={glossary.previous_depth} /></span>
                       <span className="font-mono">${pullback.previous_depth.toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span>Current Depth:</span>
+                      <span>Liquidity now: <Tooltip content={glossary.current_depth} /></span>
                       <span className="font-mono text-red-600 dark:text-red-400">
                         ${pullback.current_depth.toLocaleString()}
                       </span>
@@ -134,13 +137,13 @@ export function MarketMakerPage() {
       {activeTab === 'hours' && (
         <>
           {/* Info Box */}
-          <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
-            <p className="text-sm text-blue-800 dark:text-blue-300">
-              <strong>Trading Hour Quality</strong> is calculated based on average spread tightness
-              and order book depth across all markets. Higher quality scores indicate better
-              liquidity conditions for trading.
-            </p>
-          </div>
+          <InfoBox variant="info" className="mb-6">
+            <strong>When should you trade?</strong> Trading costs vary throughout the day because
+            liquidity providers are more active at certain hours. The &quot;quality score&quot;
+            below combines two factors: how tight the spreads are (lower = cheaper to trade) and
+            how deep the order books are (deeper = less price impact). Green hours are when
+            you&apos;ll get the best prices.
+          </InfoBox>
 
           {loadingHours && (
             <div className="flex justify-center py-12">
@@ -154,8 +157,8 @@ export function MarketMakerPage() {
 
           {bestHours && bestHours.length === 0 && (
             <EmptyState
-              title="No data"
-              description="Insufficient order book data to analyze trading hours."
+              title="Not enough data yet"
+              description="We need more order book snapshots before we can identify hourly patterns. Check back in a few days."
             />
           )}
 
@@ -163,7 +166,10 @@ export function MarketMakerPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Hourly Grid */}
               <Card className="p-4 md:col-span-2">
-                <h3 className="font-semibold text-gray-900 dark:text-gray-50 mb-4">24-Hour Quality Heatmap</h3>
+                <h3 className="font-semibold text-gray-900 dark:text-gray-50 mb-1">24-Hour Trading Quality Map</h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
+                  Each box is an hour of the day (UTC). Greener = cheaper to trade at that time.
+                </p>
                 <div className="grid grid-cols-6 md:grid-cols-12 gap-1">
                   {Array.from({ length: 24 }, (_, i) => {
                     const hourData = bestHours.find((h) => h.hour === i);
@@ -192,7 +198,7 @@ export function MarketMakerPage() {
                   <span>Quality:</span>
                   <div className="flex items-center gap-1">
                     <div className="w-4 h-4 bg-emerald-500 rounded" />
-                    <span>Excellent</span>
+                    <span>Cheapest</span>
                   </div>
                   <div className="flex items-center gap-1">
                     <div className="w-4 h-4 bg-emerald-300 dark:bg-emerald-600 rounded" />
@@ -200,18 +206,18 @@ export function MarketMakerPage() {
                   </div>
                   <div className="flex items-center gap-1">
                     <div className="w-4 h-4 bg-yellow-300 dark:bg-yellow-600 rounded" />
-                    <span>Fair</span>
+                    <span>Moderate</span>
                   </div>
                   <div className="flex items-center gap-1">
                     <div className="w-4 h-4 bg-orange-300 dark:bg-orange-600 rounded" />
-                    <span>Poor</span>
+                    <span>Expensive</span>
                   </div>
                 </div>
               </Card>
 
               {/* Top Hours List */}
               <Card className="p-4">
-                <h3 className="font-semibold text-gray-900 dark:text-gray-50 mb-4">Top 5 Trading Hours</h3>
+                <h3 className="font-semibold text-gray-900 dark:text-gray-50 mb-4">Top 5 Cheapest Hours</h3>
                 <div className="space-y-2">
                   {bestHours.slice(0, 5).map((hour, i) => (
                     <div
@@ -242,18 +248,18 @@ export function MarketMakerPage() {
                 </div>
               </Card>
 
-              {/* Statistics */}
+              {/* Summary */}
               <Card className="p-4">
-                <h3 className="font-semibold text-gray-900 dark:text-gray-50 mb-4">Statistics</h3>
+                <h3 className="font-semibold text-gray-900 dark:text-gray-50 mb-4">Summary</h3>
                 <div className="space-y-3">
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-600 dark:text-gray-300">Avg Spread (best hour):</span>
+                    <span className="text-gray-600 dark:text-gray-300">Cheapest hour spread:</span>
                     <span className="font-mono text-gray-900 dark:text-gray-50">
                       {bestHours[0] ? (bestHours[0].avg_spread_pct * 100).toFixed(3) : '-'}%
                     </span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-600 dark:text-gray-300">Avg Spread (worst hour):</span>
+                    <span className="text-gray-600 dark:text-gray-300">Most expensive hour spread:</span>
                     <span className="font-mono text-gray-900 dark:text-gray-50">
                       {bestHours.length > 0
                         ? (bestHours[bestHours.length - 1].avg_spread_pct * 100).toFixed(3)
@@ -261,13 +267,13 @@ export function MarketMakerPage() {
                     </span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-600 dark:text-gray-300">Markets Analyzed:</span>
+                    <span className="text-gray-600 dark:text-gray-300">Markets covered:</span>
                     <span className="font-mono text-gray-900 dark:text-gray-50">
                       {bestHours[0]?.market_count || 0}
                     </span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-600 dark:text-gray-300">Best Hour Depth:</span>
+                    <span className="text-gray-600 dark:text-gray-300">Best hour liquidity:</span>
                     <span className="font-mono text-gray-900 dark:text-gray-50">
                       ${bestHours[0]?.avg_depth.toLocaleString(undefined, { maximumFractionDigits: 0 }) || '-'}
                     </span>

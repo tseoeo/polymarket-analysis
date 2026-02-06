@@ -4,13 +4,31 @@ import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { Tooltip, InfoBox } from '@/components/ui/Tooltip';
+import { glossary } from '@/lib/explanations';
 import { useArbitrageOpportunities, useRelationshipGroups } from '@/hooks/useArbitrage';
 
-const TYPE_LABELS: Record<string, { label: string; color: string }> = {
-  mutually_exclusive: { label: 'Mutual Exclusion', color: 'purple' },
-  conditional: { label: 'Conditional', color: 'blue' },
-  time_sequence: { label: 'Time Inversion', color: 'orange' },
-  subset: { label: 'Subset Mispricing', color: 'teal' },
+const TYPE_LABELS: Record<string, { label: string; color: string; explanation: string }> = {
+  mutually_exclusive: {
+    label: 'Only-One-Can-Win',
+    color: 'purple',
+    explanation: 'Prices for competing outcomes add up to more (or less) than 100% — that\'s a math error you can profit from.',
+  },
+  conditional: {
+    label: 'Depends-On',
+    color: 'blue',
+    explanation: 'A specific outcome is priced higher than the broader outcome it depends on — logically impossible.',
+  },
+  time_sequence: {
+    label: 'Timeline Error',
+    color: 'orange',
+    explanation: 'An earlier deadline is priced higher than a later one for the same event — should be the other way around.',
+  },
+  subset: {
+    label: 'Part vs Whole',
+    color: 'teal',
+    explanation: 'A specific version of an outcome costs more than the general version — makes no sense mathematically.',
+  },
 };
 
 export function ArbitragePage() {
@@ -36,13 +54,22 @@ export function ArbitragePage() {
       {/* Header */}
       <div className="mb-6">
         <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-50 mb-2">
-          Cross-Market Arbitrage
+          Pricing Mistakes Across Markets
         </h1>
         <p className="text-gray-600 dark:text-gray-300 max-w-2xl">
-          Detect pricing anomalies across related markets. Cross-market arbitrage opportunities
-          arise when markets with logical relationships are mispriced relative to each other.
+          Sometimes related prediction markets have prices that contradict each other — creating
+          opportunities where you can guarantee a profit no matter what happens. These mistakes
+          get corrected fast, so timing matters.
         </p>
       </div>
+
+      {/* Intro Explainer */}
+      <InfoBox variant="tip" className="mb-6">
+        <strong>How does this work?</strong> Imagine two markets: &quot;Will Team A win?&quot;
+        at 60% and &quot;Will Team B win?&quot; at 50%. Since only one team can win, the prices
+        should add up to around 100%. But 60% + 50% = 110% — that extra 10% is free money if you
+        sell both sides. This page finds exactly these kinds of mathematical pricing errors.
+      </InfoBox>
 
       {/* Tabs */}
       <div className="border-b border-gray-200 dark:border-gray-700 mb-6">
@@ -55,7 +82,7 @@ export function ArbitragePage() {
                 : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
             }`}
           >
-            Opportunities
+            Active Opportunities
           </button>
           <button
             onClick={() => setActiveTab('groups')}
@@ -65,7 +92,7 @@ export function ArbitragePage() {
                 : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
             }`}
           >
-            Relationship Groups
+            Linked Markets
           </button>
         </nav>
       </div>
@@ -114,19 +141,26 @@ export function ArbitragePage() {
 
           {opportunities && opportunities.opportunities.length === 0 && (
             <EmptyState
-              title="No arbitrage opportunities"
-              description="No cross-market pricing anomalies detected at this time."
+              title="No pricing mistakes found"
+              description="All related markets are priced consistently right now. The scanner checks every 15 minutes and will alert you when it finds a discrepancy."
             />
           )}
 
           {opportunities && opportunities.opportunities.length > 0 && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {opportunities.opportunities.map((opp) => {
-                const typeInfo = TYPE_LABELS[opp.type || ''] || { label: 'Unknown', color: 'gray' };
+                const typeInfo = TYPE_LABELS[opp.type || ''] || { label: 'Unknown', color: 'gray', explanation: '' };
                 return (
                   <Card key={opp.id} className="p-4">
                     <div className="flex items-start justify-between mb-3">
-                      <Badge color={typeInfo.color as any}>{typeInfo.label}</Badge>
+                      <div>
+                        <Badge color={typeInfo.color as any}>{typeInfo.label}</Badge>
+                        {typeInfo.explanation && (
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 max-w-xs">
+                            {typeInfo.explanation}
+                          </p>
+                        )}
+                      </div>
                       {opp.profit_estimate && (
                         <span className="text-lg font-semibold text-emerald-600 dark:text-emerald-400">
                           +{(opp.profit_estimate * 100).toFixed(1)}%
@@ -173,15 +207,15 @@ export function ArbitragePage() {
 
           {groupsData && groupsData.groups.length === 0 && (
             <EmptyState
-              title="No relationship groups"
-              description="No market relationship groups have been defined."
+              title="No linked markets"
+              description="No market relationships have been set up yet. The system can auto-detect related markets, or you can link them manually through the API."
             />
           )}
 
           {groupsData && groupsData.groups.length > 0 && (
             <div className="space-y-4">
               {groupsData.groups.map((group) => {
-                const typeInfo = TYPE_LABELS[group.relationship_type] || { label: 'Unknown', color: 'gray' };
+                const typeInfo = TYPE_LABELS[group.relationship_type] || { label: 'Unknown', color: 'gray', explanation: '' };
                 return (
                   <Card key={group.group_id} className="p-4">
                     <div className="flex items-center gap-3 mb-2">
@@ -189,7 +223,10 @@ export function ArbitragePage() {
                       <span className="text-sm text-gray-500 dark:text-gray-400">
                         {group.market_ids.length} markets
                       </span>
-                      <span className="text-xs text-gray-400 dark:text-gray-500">
+                      <span
+                        className="text-xs text-gray-400 dark:text-gray-500"
+                        title={glossary.confidence}
+                      >
                         Confidence: {(group.confidence * 100).toFixed(0)}%
                       </span>
                     </div>

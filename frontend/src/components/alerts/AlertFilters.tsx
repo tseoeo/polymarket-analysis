@@ -8,8 +8,8 @@ interface FilterOption {
 const alertTypes: FilterOption[] = [
   { value: '', label: 'All Types' },
   { value: 'volume_spike', label: 'Volume Spike' },
-  { value: 'spread_alert', label: 'Spread Alert' },
-  { value: 'mm_pullback', label: 'MM Pullback' },
+  { value: 'spread_alert', label: 'Wide Spread' },
+  { value: 'mm_pullback', label: 'Liquidity Drop' },
   { value: 'arbitrage', label: 'Arbitrage' },
 ];
 

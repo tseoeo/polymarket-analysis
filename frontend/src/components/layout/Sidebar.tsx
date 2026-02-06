@@ -27,9 +27,9 @@ const navItems: NavItem[] = [
   { to: '/watchlist', icon: <Star className="w-5 h-5" />, label: 'Watchlist' },
   { to: '/alerts', icon: <Bell className="w-5 h-5" />, label: 'Alerts' },
   { to: '/arbitrage', icon: <GitBranch className="w-5 h-5" />, label: 'Arbitrage' },
-  { to: '/orderbook', icon: <BookOpen className="w-5 h-5" />, label: 'Order Book' },
-  { to: '/volume', icon: <TrendingUp className="w-5 h-5" />, label: 'Volume' },
-  { to: '/mm', icon: <Users className="w-5 h-5" />, label: 'Market Makers' },
+  { to: '/orderbook', icon: <BookOpen className="w-5 h-5" />, label: 'Liquidity' },
+  { to: '/volume', icon: <TrendingUp className="w-5 h-5" />, label: 'Activity' },
+  { to: '/mm', icon: <Users className="w-5 h-5" />, label: 'Liquidity Providers' },
   { to: '/markets', icon: <BarChart3 className="w-5 h-5" />, label: 'Markets' },
   { to: '/dashboard', icon: <LayoutDashboard className="w-5 h-5" />, label: 'Dashboard' },
 ];

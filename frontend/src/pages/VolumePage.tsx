@@ -4,6 +4,7 @@ import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { InfoBox } from '@/components/ui/Tooltip';
 import { useVolumeSpikes, useVolumeLeaders } from '@/hooks/useVolume';
 
 export function VolumePage() {
@@ -26,13 +27,22 @@ export function VolumePage() {
       {/* Header */}
       <div className="mb-6">
         <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-50 mb-2">
-          Volume Analysis
+          Trading Activity Monitor
         </h1>
         <p className="text-gray-600 dark:text-gray-300 max-w-2xl">
-          Monitor volume spikes, identify high-activity markets, and track volume trends.
-          Unusual volume often precedes significant price movements.
+          Track which markets are seeing unusual trading activity. When trading volume suddenly
+          spikes well above normal, it often means someone knows something — a news event, a leak,
+          or informed traders taking positions before a price move.
         </p>
       </div>
+
+      {/* Intro Explainer */}
+      <InfoBox variant="info" className="mb-6">
+        <strong>What is volume?</strong> Volume is simply the total dollar amount of trades
+        happening in a market. Think of it like foot traffic in a store — if a normally quiet shop
+        suddenly has a crowd, something interesting is probably happening. The <strong>volume
+        ratio</strong> (e.g., &quot;5.2x&quot;) tells you how much higher current activity is compared to normal.
+      </InfoBox>
 
       {/* Tabs */}
       <div className="border-b border-gray-200 dark:border-gray-700 mb-6">
@@ -45,7 +55,7 @@ export function VolumePage() {
                 : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
             }`}
           >
-            Volume Spikes
+            Unusual Activity
           </button>
           <button
             onClick={() => setActiveTab('leaders')}
@@ -55,7 +65,7 @@ export function VolumePage() {
                 : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
             }`}
           >
-            Volume Leaders
+            Most Active Markets
           </button>
         </nav>
       </div>
@@ -74,8 +84,8 @@ export function VolumePage() {
 
           {spikes && spikes.length === 0 && (
             <EmptyState
-              title="No volume spikes"
-              description="No unusual volume activity detected at this time."
+              title="No unusual activity"
+              description="All markets are trading at normal levels right now. Check back later — spikes often happen around news events."
             />
           )}
 
@@ -84,13 +94,13 @@ export function VolumePage() {
               {spikes.map((spike) => (
                 <Card key={spike.id} className="p-4">
                   <div className="flex items-start justify-between mb-3">
-                    <Badge color="yellow">Volume Spike</Badge>
+                    <Badge color="yellow">Activity Surge</Badge>
                     <span className={`text-lg font-semibold ${
                       spike.volume_ratio >= 5 ? 'text-red-600 dark:text-red-400' :
                       spike.volume_ratio >= 3 ? 'text-orange-600 dark:text-orange-400' :
                       'text-yellow-600 dark:text-yellow-400'
                     }`}>
-                      {spike.volume_ratio.toFixed(1)}x
+                      {spike.volume_ratio.toFixed(1)}x normal
                     </span>
                   </div>
                   <h3 className="font-medium text-gray-900 dark:text-gray-50 mb-2 text-sm">
@@ -98,11 +108,11 @@ export function VolumePage() {
                   </h3>
                   <div className="space-y-1 text-sm text-gray-600 dark:text-gray-300">
                     <div className="flex justify-between">
-                      <span>Current Volume:</span>
+                      <span>Recent trading:</span>
                       <span className="font-mono">${spike.current_volume.toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span>Avg Volume:</span>
+                      <span>Normal level:</span>
                       <span className="font-mono">${spike.average_volume.toLocaleString()}</span>
                     </div>
                   </div>
@@ -138,8 +148,8 @@ export function VolumePage() {
 
           {leaders && leaders.length === 0 && (
             <EmptyState
-              title="No volume data"
-              description="No trading volume recorded in the last 24 hours."
+              title="No trading data"
+              description="No trades recorded in the last 24 hours. This is unusual — the data collector may be offline."
             />
           )}
 
@@ -150,9 +160,9 @@ export function VolumePage() {
                   <tr className="text-left text-xs text-gray-500 dark:text-gray-400 uppercase border-b border-gray-200 dark:border-gray-700">
                     <th className="pb-3 font-medium">Rank</th>
                     <th className="pb-3 font-medium">Market</th>
-                    <th className="pb-3 font-medium text-right">24h Volume</th>
-                    <th className="pb-3 font-medium text-right">Trades</th>
-                    <th className="pb-3 font-medium text-right">Avg Trade</th>
+                    <th className="pb-3 font-medium text-right">24h Total Traded</th>
+                    <th className="pb-3 font-medium text-right">Number of Trades</th>
+                    <th className="pb-3 font-medium text-right">Avg Trade Size</th>
                   </tr>
                 </thead>
                 <tbody>
