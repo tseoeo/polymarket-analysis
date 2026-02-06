@@ -519,20 +519,20 @@ class TestArbitrageDetector:
         )
         test_session.add(market)
 
-        # Small profit opportunity (1%)
+        # Small profit opportunity (0.4% — below 0.5% threshold)
         yes_snapshot = create_test_snapshot(
             token_id="yes-small-token",
             market_id=market.id,
             timestamp=now - timedelta(minutes=5),
             best_bid=0.48,
-            best_ask=0.495,
+            best_ask=0.498,
         )
         no_snapshot = create_test_snapshot(
             token_id="no-small-token",
             market_id=market.id,
             timestamp=now - timedelta(minutes=5),
             best_bid=0.48,
-            best_ask=0.495,
+            best_ask=0.498,
         )
         test_session.add(yes_snapshot)
         test_session.add(no_snapshot)
@@ -542,7 +542,7 @@ class TestArbitrageDetector:
         detector = ArbitrageDetector()
         alerts = await detector.analyze(test_session)
 
-        assert len(alerts) == 0  # Below threshold
+        assert len(alerts) == 0  # Below 0.5% threshold
 
     @pytest.mark.asyncio
     async def test_deduplicates_arbitrage_alerts(self, test_session):

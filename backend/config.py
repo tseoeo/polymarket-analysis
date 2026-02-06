@@ -24,7 +24,7 @@ class Settings(BaseSettings):
     # Scheduler settings
     enable_scheduler: bool = False  # Set ENABLE_SCHEDULER=true on ONE worker only
     scheduler_interval_minutes: int = 15
-    orderbook_concurrency: int = 3  # Max concurrent orderbook/trade fetches (low to avoid 429s)
+    orderbook_concurrency: int = 10  # Max concurrent orderbook/trade fetches (safely increased)
 
     # Trade collection settings
     trade_collection_interval_minutes: int = 5  # More frequent than orderbooks
@@ -47,7 +47,7 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
 
     # Analysis thresholds
-    arbitrage_min_profit: float = 0.02  # 2% minimum profit for alerts
+    arbitrage_min_profit: float = 0.005  # 0.5% minimum profit (covers fees with margin)
     volume_spike_threshold: float = 3.0  # 3x normal volume
     spread_alert_threshold: float = 0.05  # 5% spread
 
@@ -60,7 +60,7 @@ class Settings(BaseSettings):
 
     # Orderbook analysis settings
     orderbook_depth_levels: str = "0.01,0.05,0.10"  # Price levels for depth analysis
-    orderbook_max_age_minutes: int = 30  # Max age for "current" snapshot
+    orderbook_max_age_minutes: int = 15  # Max age for "current" snapshot (tightened)
 
     # System status endpoint access control
     enable_system_status: bool = True  # Set ENABLE_SYSTEM_STATUS=false to disable

@@ -10,6 +10,20 @@
 ## In Progress
 
 <!-- Active work. Claude moves here when starting. -->
+- W-017 | Spec: Precision & Efficiency (12 items) | Owner: Claude | Started: 2026-02-06
+  - Scope: All 12 items from SPEC-precision-efficiency.md
+  - Files: backend/config.py, backend/jobs/scheduler.py, backend/services/*.py, backend/models/alert.py
+  - Risks: Concurrent analyzer change affects all analyzers
+
+- W-018 | Spec: Understandability (7 sections) | Owner: Claude | Started: 2026-02-06
+  - Scope: All 7 sections from SPEC-understandability.md
+  - Files: frontend/src/lib/explanations.ts, frontend/src/pages/*.tsx
+  - Risks: Label-only changes, low risk
+
+- W-019 | Spec: Future Improvements (9 items) | Owner: Claude | Started: 2026-02-06
+  - Scope: All 9 items from SPEC-future-improvements.md
+  - Files: backend/services/*.py, backend/api/health.py, frontend/src/pages/*.tsx
+  - Risks: Some items touch analysis logic
 
 
 

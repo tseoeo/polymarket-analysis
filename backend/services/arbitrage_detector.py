@@ -14,9 +14,11 @@ from typing import List, Optional, Dict, Tuple
 from sqlalchemy import select, desc, and_, func, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from sqlalchemy.exc import IntegrityError
+
 from config import settings
 from models.market import Market
-from models.orderbook import OrderBookSnapshot
+from models.orderbook import OrderBookSnapshot, OrderBookLatestRaw
 from models.alert import Alert
 
 logger = logging.getLogger(__name__)
@@ -52,7 +54,9 @@ class ArbitrageDetector:
         For each binary market:
         1. Get outcome prices (from orderbook or market cache)
         2. Check if outcome1 + outcome2 < 1.0 - min_profit
-        3. Generate alert if opportunity exists
+        3. Verify liquidity exists at quoted prices
+        4. Use slippage-adjusted prices for realistic profit calculation
+        5. Generate alert if opportunity exists
 
         When use_orderbook_prices=True and orderbook data is missing/stale,
         falls back to cached market prices if fallback_to_market_prices=True.
@@ -95,6 +99,11 @@ class ArbitrageDetector:
                 session, all_token_ids, now
             )
 
+        # Batch fetch depth data for liquidity check
+        depth_data = await self._batch_get_depth(session, [
+            tid for m in binary_markets for tid in m.token_ids if tid
+        ])
+
         for market in binary_markets:
             if market.id in existing_market_ids:
                 continue
@@ -102,22 +111,42 @@ class ArbitrageDetector:
             alert = None
 
             if self.use_orderbook_prices:
-                result = self._check_orderbook_arbitrage(market, orderbook_prices, now)
-                if result is _NO_OPPORTUNITY:
+                check_result = self._check_orderbook_arbitrage(market, orderbook_prices, now)
+                if check_result is _NO_OPPORTUNITY:
                     # Fresh data showed no opportunity - don't fall back
                     continue
-                elif result is not None:
-                    # Found an opportunity
-                    alert = result
-                # result is None means missing/stale data - fall back below
+                elif check_result is not None:
+                    # Found a candidate — verify liquidity exists
+                    token_ids = market.token_ids
+                    token1_depth = depth_data.get(token_ids[0], 0)
+                    token2_depth = depth_data.get(token_ids[1], 0)
+                    total_depth = token1_depth + token2_depth
+
+                    if total_depth < settings.arb_min_liquidity:
+                        logger.debug(
+                            f"Skipping {market.id}: insufficient liquidity "
+                            f"({total_depth:.0f} < {settings.arb_min_liquidity})"
+                        )
+                        continue
+
+                    # Use slippage-adjusted prices for realistic profit
+                    alert = await self._refine_with_slippage(
+                        session, market, check_result
+                    )
+                # check_result is None means missing/stale data - fall back below
 
             # Only fall back to market prices if orderbook data was unavailable
             if alert is None and self.fallback_to_market_prices:
                 alert = self._check_market_price_arbitrage(market)
 
             if alert:
-                session.add(alert)
-                alerts.append(alert)
+                try:
+                    session.add(alert)
+                    await session.flush()
+                    alerts.append(alert)
+                except IntegrityError:
+                    await session.rollback()
+                    # Duplicate — another analyzer already created this alert
 
         return alerts
 
@@ -303,6 +332,98 @@ class ArbitrageDetector:
             }
             for row in result.all()
         }
+
+    async def _batch_get_depth(
+        self,
+        session: AsyncSession,
+        token_ids: List[str],
+    ) -> Dict[str, float]:
+        """Get total ask depth at 1% for each token (for liquidity check)."""
+        subq = (
+            select(
+                OrderBookSnapshot.token_id,
+                func.max(OrderBookSnapshot.timestamp).label("max_ts"),
+            )
+            .where(OrderBookSnapshot.token_id.in_(token_ids))
+            .group_by(OrderBookSnapshot.token_id)
+            .subquery()
+        )
+
+        result = await session.execute(
+            select(
+                OrderBookSnapshot.token_id,
+                OrderBookSnapshot.ask_depth_1pct,
+            ).join(
+                subq,
+                and_(
+                    OrderBookSnapshot.token_id == subq.c.token_id,
+                    OrderBookSnapshot.timestamp == subq.c.max_ts,
+                ),
+            )
+        )
+
+        return {
+            row[0]: float(row[1]) if row[1] else 0
+            for row in result.all()
+        }
+
+    async def _refine_with_slippage(
+        self,
+        session: AsyncSession,
+        market: Market,
+        candidate_alert: Alert,
+    ) -> Optional[Alert]:
+        """Refine arbitrage profit using slippage-adjusted prices.
+
+        Uses OrderbookAnalyzer.calculate_slippage to get realistic fill prices
+        instead of best_ask. If slippage makes the trade unprofitable, returns None.
+        """
+        from services.orderbook_analyzer import OrderbookAnalyzer
+
+        token_ids = market.token_ids
+        if len(token_ids) != 2:
+            return candidate_alert
+
+        ob_analyzer = OrderbookAnalyzer()
+        trade_size = 100  # Default $100 simulation
+
+        try:
+            yes_slippage = await ob_analyzer.calculate_slippage(
+                session, token_ids[0], trade_size=trade_size, side="buy"
+            )
+            no_slippage = await ob_analyzer.calculate_slippage(
+                session, token_ids[1], trade_size=trade_size, side="buy"
+            )
+
+            if (yes_slippage and "error" not in yes_slippage and
+                    no_slippage and "error" not in no_slippage):
+                slippage_total = (
+                    yes_slippage["expected_price"] + no_slippage["expected_price"]
+                )
+                slippage_profit = 1.0 - slippage_total
+
+                if slippage_profit < self.min_profit:
+                    logger.debug(
+                        f"Slippage kills arb for {market.id}: "
+                        f"simple profit={1.0 - (candidate_alert.data or {}).get('total', 1.0):.2%}, "
+                        f"slippage-adjusted={slippage_profit:.2%}"
+                    )
+                    return None
+
+                # Update the alert with slippage-adjusted data
+                if candidate_alert.data:
+                    candidate_alert.data["slippage_adjusted_total"] = slippage_total
+                    candidate_alert.data["slippage_adjusted_profit"] = slippage_profit
+                    candidate_alert.data["simulation_trade_size"] = trade_size
+
+                # Update title and profit estimate with slippage-adjusted values
+                candidate_alert.title = f"Arbitrage: {slippage_profit:.1%} profit (slippage-adjusted)"
+                candidate_alert.data["profit_estimate"] = slippage_profit
+        except Exception as e:
+            logger.debug(f"Slippage calculation failed for {market.id}: {e}")
+            # Fall back to simple pricing if slippage calc fails
+
+        return candidate_alert
 
     async def _get_existing_alert_market_ids(
         self, session: AsyncSession

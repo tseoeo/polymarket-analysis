@@ -12,6 +12,8 @@ from typing import List, Optional, Dict, Tuple
 from sqlalchemy import select, desc, and_, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from sqlalchemy.exc import IntegrityError
+
 from models.orderbook import OrderBookSnapshot
 from models.market import Market
 from models.alert import Alert
@@ -103,42 +105,72 @@ class MarketMakerAnalyzer:
                 )
                 continue
 
-            # Calculate total depth at 1% level
-            old_depth = (oldest.bid_depth_1pct or 0) + (oldest.ask_depth_1pct or 0)
-            new_depth = (newest.bid_depth_1pct or 0) + (newest.ask_depth_1pct or 0)
-
-            if old_depth <= 0:
-                continue
-
-            drop_ratio = 1 - (new_depth / old_depth)
-            if drop_ratio < self.drop_threshold:
-                continue
-
             # Check for existing alert (dedup by market_id + token_id)
             alert_key = (market_id, token_id)
             if alert_key in existing_alerts:
                 continue
 
-            # Create alert
+            # Check depth at 1%, 5%, and 10% levels
+            # Alert if ANY level shows a >= threshold drop
+            depth_levels = [
+                ("1%", "bid_depth_1pct", "ask_depth_1pct"),
+                ("5%", "bid_depth_5pct", "ask_depth_5pct"),
+                ("10%", "bid_depth_10pct", "ask_depth_10pct"),
+            ]
+
+            worst_drop = 0.0
+            worst_level = None
+            worst_old_depth = 0.0
+            worst_new_depth = 0.0
+
+            for level_name, bid_field, ask_field in depth_levels:
+                old_bid = getattr(oldest, bid_field, 0) or 0
+                old_ask = getattr(oldest, ask_field, 0) or 0
+                new_bid = getattr(newest, bid_field, 0) or 0
+                new_ask = getattr(newest, ask_field, 0) or 0
+
+                old_depth = old_bid + old_ask
+                new_depth = new_bid + new_ask
+
+                if old_depth <= 0:
+                    continue
+
+                drop_ratio = 1 - (new_depth / old_depth)
+                if drop_ratio > worst_drop:
+                    worst_drop = drop_ratio
+                    worst_level = level_name
+                    worst_old_depth = old_depth
+                    worst_new_depth = new_depth
+
+            if worst_drop < self.drop_threshold:
+                continue
+
+            # Create alert with the worst affected level
             alert = Alert.create_mm_pullback_alert(
                 market_id=market_id,
-                title=f"MM pullback: {drop_ratio:.0%} depth reduction",
+                title=f"MM pullback: {worst_drop:.0%} depth reduction at {worst_level}",
                 data={
-                    "previous_depth": float(old_depth),
-                    "current_depth": float(new_depth),
-                    "depth_drop_pct": float(drop_ratio),
+                    "previous_depth": float(worst_old_depth),
+                    "current_depth": float(worst_new_depth),
+                    "depth_drop_pct": float(worst_drop),
+                    "depth_level": worst_level,
                     "token_id": token_id,
                     "lookback_hours": self.lookback.total_seconds() / 3600,
                     "oldest_snapshot_time": oldest.timestamp.isoformat(),
                     "newest_snapshot_time": newest.timestamp.isoformat(),
                 },
             )
-            session.add(alert)
-            alerts.append(alert)
-            logger.info(
-                f"MM pullback detected: {market_id}/{token_id} "
-                f"depth dropped {drop_ratio:.0%}"
-            )
+            try:
+                session.add(alert)
+                await session.flush()
+                alerts.append(alert)
+                logger.info(
+                    f"MM pullback detected: {market_id}/{token_id} "
+                    f"depth dropped {worst_drop:.0%} at {worst_level} level"
+                )
+            except IntegrityError:
+                await session.rollback()
+                # Duplicate — another analyzer already created this alert
 
         return alerts
 

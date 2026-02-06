@@ -380,17 +380,17 @@ async def test_min_profit_threshold(test_session):
     from models.market import Market
     from models.relationship import MarketRelationship
 
-    # Conditional with small violation (1% - below threshold)
+    # Conditional with small violation (0.3% - below 0.5% threshold)
     parent = Market(
         id="small-parent",
         question="Will X win?",
-        outcomes=[{"name": "Yes", "token_id": "sp-yes", "price": 0.50}],
+        outcomes=[{"name": "Yes", "token_id": "sp-yes", "price": 0.500}],
         active=True,
     )
     child = Market(
         id="small-child",
         question="Will X also win?",
-        outcomes=[{"name": "Yes", "token_id": "sc-yes", "price": 0.51}],
+        outcomes=[{"name": "Yes", "token_id": "sc-yes", "price": 0.503}],
         active=True,
     )
 
@@ -403,7 +403,7 @@ async def test_min_profit_threshold(test_session):
     test_session.add(rel)
     await test_session.commit()
 
-    detector = CrossMarketArbitrageDetector()  # Default 2% min profit
+    detector = CrossMarketArbitrageDetector()  # Default 0.5% min profit
     alerts = await detector.detect_conditional_arb(test_session, set())
 
     # Should not alert - profit too small

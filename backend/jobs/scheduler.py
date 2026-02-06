@@ -157,59 +157,50 @@ async def collect_trades_job():
 
 
 async def run_analysis_job():
-    """Job: Run all analysis modules and generate alerts.
+    """Job: Run all analysis modules concurrently and generate alerts.
 
-    Runs four analyzer modules:
+    Runs five analyzer modules in parallel using asyncio.gather:
     1. VolumeAnalyzer - Detects unusual trading volume spikes
     2. SpreadAnalyzer - Detects wide spreads indicating poor liquidity
     3. MarketMakerAnalyzer - Detects MM liquidity withdrawals
     4. ArbitrageDetector - Detects intra-market pricing anomalies
+    5. CrossMarketArbitrageDetector - Detects cross-market pricing anomalies
 
-    Each analyzer handles its own deduplication to avoid duplicate alerts.
+    Arbitrage opportunities can appear and vanish in minutes, so this runs
+    every 15 minutes. Each analyzer gets its own DB session to avoid contention.
     """
     async with track_job_run("run_analysis") as run_id:
         from services.volume_analyzer import VolumeAnalyzer
         from services.spread_analyzer import SpreadAnalyzer
         from services.mm_analyzer import MarketMakerAnalyzer
         from services.arbitrage_detector import ArbitrageDetector
+        from services.cross_market_arbitrage import CrossMarketArbitrageDetector
         from database import async_session_maker
 
-        async with async_session_maker() as session:
-            all_alerts = []
+        all_alerts = []
 
-            # Volume spike analysis
-            try:
-                volume_analyzer = VolumeAnalyzer()
-                volume_alerts = await volume_analyzer.analyze(session)
-                all_alerts.extend(volume_alerts)
-            except Exception as e:
-                logger.error(f"Volume analysis failed: {e}")
+        async def run_analyzer(AnalyzerClass, method="analyze"):
+            async with async_session_maker() as session:
+                analyzer = AnalyzerClass()
+                alerts = await getattr(analyzer, method)(session)
+                await session.commit()
+                return alerts
 
-            # Spread/liquidity analysis
-            try:
-                spread_analyzer = SpreadAnalyzer()
-                spread_alerts = await spread_analyzer.analyze(session)
-                all_alerts.extend(spread_alerts)
-            except Exception as e:
-                logger.error(f"Spread analysis failed: {e}")
+        results = await asyncio.gather(
+            run_analyzer(VolumeAnalyzer),
+            run_analyzer(SpreadAnalyzer),
+            run_analyzer(MarketMakerAnalyzer),
+            run_analyzer(ArbitrageDetector),
+            run_analyzer(CrossMarketArbitrageDetector),
+            return_exceptions=True,
+        )
 
-            # Market maker pullback analysis
-            try:
-                mm_analyzer = MarketMakerAnalyzer()
-                mm_alerts = await mm_analyzer.analyze(session)
-                all_alerts.extend(mm_alerts)
-            except Exception as e:
-                logger.error(f"MM analysis failed: {e}")
-
-            # Arbitrage detection
-            try:
-                arb_detector = ArbitrageDetector()
-                arb_alerts = await arb_detector.analyze(session)
-                all_alerts.extend(arb_alerts)
-            except Exception as e:
-                logger.error(f"Arbitrage analysis failed: {e}")
-
-            await session.commit()
+        analyzer_names = ["Volume", "Spread", "MM", "Arbitrage", "Cross-Market Arbitrage"]
+        for name, result in zip(analyzer_names, results):
+            if isinstance(result, Exception):
+                logger.error(f"{name} analysis failed: {result}")
+            else:
+                all_alerts.extend(result)
 
         # Record alerts generated count
         await update_job_records("run_analysis", run_id, len(all_alerts))
@@ -386,10 +377,12 @@ async def start_scheduler():
         replace_existing=True,
     )
 
-    # Analysis job - runs every hour
+    # Analysis job - runs every 15 minutes
+    # Arbitrage opportunities can appear and vanish in minutes,
+    # so 15-minute analysis is the minimum useful cadence
     scheduler.add_job(
         run_analysis_job,
-        IntervalTrigger(hours=1),
+        IntervalTrigger(minutes=15),
         id="run_analysis",
         name="Run analysis and generate alerts",
         replace_existing=True,

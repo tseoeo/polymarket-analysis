@@ -2,7 +2,7 @@
 
 from datetime import datetime
 from typing import Optional
-from sqlalchemy import String, Text, DateTime, Boolean, JSON, ForeignKey, Integer
+from sqlalchemy import String, Text, DateTime, Boolean, JSON, ForeignKey, Integer, Index
 from sqlalchemy.orm import Mapped, mapped_column
 
 from database import Base
@@ -33,6 +33,9 @@ class Alert(Base):
         nullable=True,
         index=True,
     )
+
+    # Token ID for deduplication (extracted from data for indexing)
+    token_id: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
 
     # For cross-market alerts (e.g., arbitrage)
     related_market_ids: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
@@ -84,13 +87,22 @@ class Alert(Base):
         data: dict,
     ) -> "Alert":
         """Factory method for volume spike alerts."""
-        severity = "high" if volume_ratio > 5 else "medium" if volume_ratio > 3 else "info"
+        # Tiered severity based on spike magnitude
+        if volume_ratio >= 10:
+            severity = "critical"
+        elif volume_ratio >= 5:
+            severity = "high"
+        elif volume_ratio >= 3:
+            severity = "medium"
+        else:
+            severity = "low"
         return cls(
             alert_type="volume_spike",
             severity=severity,
             title=title,
             description=f"Volume is {volume_ratio:.1f}x normal levels",
             market_id=market_id,
+            token_id=data.get("token_id"),
             data={**data, "volume_ratio": volume_ratio},
         )
 
@@ -109,6 +121,7 @@ class Alert(Base):
             title=title,
             description=f"Spread is {spread_pct*100:.1f}%",
             market_id=market_id,
+            token_id=data.get("token_id"),
             data={**data, "spread_pct": spread_pct},
         )
 
@@ -126,5 +139,17 @@ class Alert(Base):
             title=title,
             description="Market makers appear to be reducing liquidity",
             market_id=market_id,
+            token_id=data.get("token_id"),
             data=data,
         )
+
+
+# Partial unique index to prevent duplicate active alerts from concurrent analyzers
+Index(
+    'ix_alerts_active_dedup',
+    Alert.alert_type,
+    Alert.market_id,
+    Alert.token_id,
+    unique=True,
+    postgresql_where=(Alert.is_active == True),
+)

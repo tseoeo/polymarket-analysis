@@ -419,22 +419,44 @@ class PolymarketClient:
             return []
 
     async def get_all_recent_trades(self, limit: int = 500) -> list:
-        """Fetch recent trades from public Data API (no auth required)."""
-        # Data API is public and returns all platform trades
+        """Fetch recent trades from public Data API (no auth required).
+
+        If the API returns exactly `limit` results, paginates with offset
+        to ensure no trades are missed during busy periods.
+        """
         data_api_url = "https://data-api.polymarket.com"
         url = f"{data_api_url}/trades"
-        params = {"limit": limit}
+        all_trades = []
+        max_pages = 5  # Safety limit on pagination
 
         try:
-            data = await self._get(url, params)
-            trades = data if isinstance(data, list) else data.get("data", data.get("trades", []))
-            logger.info(f"All recent trades from Data API: {len(trades)} found")
-            if trades:
-                logger.info(f"Sample trade keys: {list(trades[0].keys()) if trades else 'none'}")
-            return trades
+            for page in range(max_pages):
+                params = {"limit": limit}
+                if all_trades:
+                    params["offset"] = len(all_trades)
+
+                data = await self._get(url, params)
+                trades = data if isinstance(data, list) else data.get("data", data.get("trades", []))
+
+                if not trades:
+                    break
+
+                all_trades.extend(trades)
+
+                # If we got fewer than limit, we have all trades
+                if len(trades) < limit:
+                    break
+
+                logger.info(
+                    f"Trade pagination: page {page + 1}, got {len(trades)} trades "
+                    f"(total so far: {len(all_trades)}), fetching more..."
+                )
+
+            logger.info(f"All recent trades from Data API: {len(all_trades)} found")
+            return all_trades
         except Exception as e:
             logger.warning(f"Failed to fetch from Data API: {e}")
-            return []
+            return all_trades if all_trades else []
 
     async def get_trades(self, token_id: str, limit: int = 100) -> list:
         """Fetch recent trades for a token (requires API authentication)."""

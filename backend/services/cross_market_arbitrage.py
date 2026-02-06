@@ -15,6 +15,8 @@ from collections import defaultdict
 from sqlalchemy import select, func, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from sqlalchemy.exc import IntegrityError
+
 from config import settings
 from models.market import Market
 from models.relationship import MarketRelationship
@@ -36,11 +38,11 @@ class CrossMarketArbitrageDetector:
 
     def __init__(
         self,
-        max_snapshot_age_minutes: int = 30,
+        max_snapshot_age_minutes: int = None,
         min_liquidity: float = None,
     ):
         self.min_profit = settings.arbitrage_min_profit
-        self.max_age = timedelta(minutes=max_snapshot_age_minutes)
+        self.max_age = timedelta(minutes=max_snapshot_age_minutes or settings.orderbook_max_age_minutes)
         self.min_liquidity = min_liquidity or settings.arb_min_liquidity
 
     async def analyze(self, session: AsyncSession) -> List[Alert]:
@@ -138,11 +140,15 @@ class CrossMarketArbitrageDetector:
                                 "strategy": "sell_all_outcomes",
                             },
                         )
-                        session.add(alert)
-                        alerts.append(alert)
-                        logger.info(
-                            f"Mutually exclusive sell-all: {group_id} profit={profit:.2%}"
-                        )
+                        try:
+                            session.add(alert)
+                            await session.flush()
+                            alerts.append(alert)
+                            logger.info(
+                                f"Mutually exclusive sell-all: {group_id} profit={profit:.2%}"
+                            )
+                        except IntegrityError:
+                            await session.rollback()
 
             # Check for buy-all opportunity (sum < 1)
             buy_alert_key = f"exclusive-buy-{group_id}"
@@ -176,11 +182,15 @@ class CrossMarketArbitrageDetector:
                                 "strategy": "buy_all_outcomes",
                             },
                         )
-                        session.add(alert)
-                        alerts.append(alert)
-                        logger.info(
-                            f"Mutually exclusive buy-all: {group_id} profit={profit:.2%}"
-                        )
+                        try:
+                            session.add(alert)
+                            await session.flush()
+                            alerts.append(alert)
+                            logger.info(
+                                f"Mutually exclusive buy-all: {group_id} profit={profit:.2%}"
+                            )
+                        except IntegrityError:
+                            await session.rollback()
 
         return alerts
 
@@ -254,9 +264,13 @@ class CrossMarketArbitrageDetector:
                     "strategy": "buy_parent_sell_child",
                 },
             )
-            session.add(alert)
-            alerts.append(alert)
-            logger.info(f"Conditional arb: {rel.parent_market_id} -> {rel.child_market_id}")
+            try:
+                session.add(alert)
+                await session.flush()
+                alerts.append(alert)
+                logger.info(f"Conditional arb: {rel.parent_market_id} -> {rel.child_market_id}")
+            except IntegrityError:
+                await session.rollback()
 
         return alerts
 
@@ -333,9 +347,13 @@ class CrossMarketArbitrageDetector:
                     "strategy": "sell_earlier_buy_later",
                 },
             )
-            session.add(alert)
-            alerts.append(alert)
-            logger.info(f"Time inversion arb: {earlier_id} -> {later_id}")
+            try:
+                session.add(alert)
+                await session.flush()
+                alerts.append(alert)
+                logger.info(f"Time inversion arb: {earlier_id} -> {later_id}")
+            except IntegrityError:
+                await session.rollback()
 
         return alerts
 
@@ -412,9 +430,13 @@ class CrossMarketArbitrageDetector:
                     "strategy": "sell_specific_buy_general",
                 },
             )
-            session.add(alert)
-            alerts.append(alert)
-            logger.info(f"Subset mispricing: {general_id} -> {specific_id}")
+            try:
+                session.add(alert)
+                await session.flush()
+                alerts.append(alert)
+                logger.info(f"Subset mispricing: {general_id} -> {specific_id}")
+            except IntegrityError:
+                await session.rollback()
 
         return alerts
 

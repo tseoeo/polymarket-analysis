@@ -15,6 +15,8 @@ from decimal import Decimal
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from sqlalchemy.exc import IntegrityError
+
 from config import settings
 from models.trade import Trade
 from models.market import Market
@@ -128,9 +130,14 @@ class VolumeAnalyzer:
                     "token_id": token_id,
                 },
             )
-            session.add(alert)
-            alerts.append(alert)
-            logger.info(f"Volume spike detected: {market_id}/{token_id} at {ratio:.1f}x normal")
+            try:
+                session.add(alert)
+                await session.flush()
+                alerts.append(alert)
+                logger.info(f"Volume spike detected: {market_id}/{token_id} at {ratio:.1f}x normal")
+            except IntegrityError:
+                await session.rollback()
+                # Duplicate — another analyzer already created this alert
 
         return alerts
 

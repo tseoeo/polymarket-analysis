@@ -11,6 +11,8 @@ from typing import List, Optional, Dict
 from sqlalchemy import select, desc, and_, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from sqlalchemy.exc import IntegrityError
+
 from config import settings
 from models.orderbook import OrderBookSnapshot
 from models.market import Market
@@ -113,11 +115,16 @@ class SpreadAnalyzer:
                     "snapshot_age_seconds": (now - snapshot.timestamp).total_seconds(),
                 },
             )
-            session.add(alert)
-            alerts.append(alert)
-            logger.info(
-                f"Wide spread detected: {market_id}/{token_id} at {snapshot.spread_pct:.1%}"
-            )
+            try:
+                session.add(alert)
+                await session.flush()
+                alerts.append(alert)
+                logger.info(
+                    f"Wide spread detected: {market_id}/{token_id} at {snapshot.spread_pct:.1%}"
+                )
+            except IntegrityError:
+                await session.rollback()
+                # Duplicate — another analyzer already created this alert
 
         return alerts
 

@@ -41,6 +41,8 @@ class OrderBookSnapshot(Base):
     ask_depth_1pct: Mapped[Optional[float]] = mapped_column(Numeric(20, 2), nullable=True)
     bid_depth_5pct: Mapped[Optional[float]] = mapped_column(Numeric(20, 2), nullable=True)
     ask_depth_5pct: Mapped[Optional[float]] = mapped_column(Numeric(20, 2), nullable=True)
+    bid_depth_10pct: Mapped[Optional[float]] = mapped_column(Numeric(20, 2), nullable=True)
+    ask_depth_10pct: Mapped[Optional[float]] = mapped_column(Numeric(20, 2), nullable=True)
 
     # Book imbalance: (bid_depth - ask_depth) / (bid_depth + ask_depth)
     # Positive = buying pressure, Negative = selling pressure
@@ -128,6 +130,8 @@ class OrderBookSnapshot(Base):
         ask_depth_1pct = calculate_depth(asks, best_ask, 0.01, False) if best_ask else None
         bid_depth_5pct = calculate_depth(bids, best_bid, 0.05, True) if best_bid else None
         ask_depth_5pct = calculate_depth(asks, best_ask, 0.05, False) if best_ask else None
+        bid_depth_10pct = calculate_depth(bids, best_bid, 0.10, True) if best_bid else None
+        ask_depth_10pct = calculate_depth(asks, best_ask, 0.10, False) if best_ask else None
 
         # Calculate imbalance (use `is not None` to handle 0.0 depths correctly)
         imbalance = None
@@ -150,6 +154,8 @@ class OrderBookSnapshot(Base):
             ask_depth_1pct=ask_depth_1pct,
             bid_depth_5pct=bid_depth_5pct,
             ask_depth_5pct=ask_depth_5pct,
+            bid_depth_10pct=bid_depth_10pct,
+            ask_depth_10pct=ask_depth_10pct,
             imbalance=imbalance,
         )
 

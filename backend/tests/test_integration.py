@@ -274,6 +274,7 @@ class TestAnalyzerIntegration:
         now = datetime.utcnow()
 
         # Create orderbook snapshots with mispricing (0.40 + 0.50 = 0.90 < 1.0)
+        # Depth must exceed arb_min_liquidity ($1000) for the liquidity check
         yes_snapshot = OrderBookSnapshot(
             token_id="arb_yes_token_123",
             market_id="arb-test-market",
@@ -283,10 +284,10 @@ class TestAnalyzerIntegration:
             spread=0.02,
             spread_pct=0.05,
             mid_price=0.39,
-            bid_depth_1pct=100,
-            ask_depth_1pct=100,
-            bid_depth_5pct=200,
-            ask_depth_5pct=200,
+            bid_depth_1pct=1000,
+            ask_depth_1pct=1000,
+            bid_depth_5pct=2000,
+            ask_depth_5pct=2000,
             imbalance=0.0,
         )
         test_session.add(yes_snapshot)
@@ -300,10 +301,10 @@ class TestAnalyzerIntegration:
             spread=0.02,
             spread_pct=0.04,
             mid_price=0.49,
-            bid_depth_1pct=100,
-            ask_depth_1pct=100,
-            bid_depth_5pct=200,
-            ask_depth_5pct=200,
+            bid_depth_1pct=1000,
+            ask_depth_1pct=1000,
+            bid_depth_5pct=2000,
+            ask_depth_5pct=2000,
             imbalance=0.0,
         )
         test_session.add(no_snapshot)
